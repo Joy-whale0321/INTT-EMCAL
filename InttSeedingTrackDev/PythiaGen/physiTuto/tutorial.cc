@@ -91,7 +91,7 @@ int tutorial::Init(PHCompositeNode *topNode)
   ////////////////////////////////////////////////////////
   // Initialization of the member                       //
   ////////////////////////////////////////////////////////
-  output = new TFile( output_path.c_str(), "RECREATE" );
+//   output = new TFile( output_path.c_str(), "RECREATE" );
   
     std::cout << "tutorial::Init(PHCompositeNode *topNode) Initializing" << std::endl;
 

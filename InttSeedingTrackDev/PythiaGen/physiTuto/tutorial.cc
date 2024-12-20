@@ -1,4 +1,4 @@
-//____________________________________________________________________________..
+a//____________________________________________________________________________..
 //
 // This is a template for a Fun4All SubsysReco module with all methods from the
 // $OFFLINE_MAIN/include/fun4all/SubsysReco.h baseclass

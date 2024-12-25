@@ -7,7 +7,7 @@
 #include <Rtypes.h>
 class tracKuma
 {
-  public:
+    public:
     tracKuma() :
       m_particleType(0),
       m_phi(0),
@@ -18,17 +18,20 @@ class tracKuma
       m_saggitaX(0),
       m_saggitaY(0),
       m_refPhi(0)
-  {
-    // 0: vertex, 1-3: MVTX, 4-5: INTT, 6: Cal
-    for(unsigned int layId = 0; layId < 7; layId++){
-      m_hitIs[layId] = false;
-      m_hitR[layId] = 0.;
-      m_hitZ[layId] = 0.;
-      m_hitPhi[layId] = 0.;
-      m_hitTheta[layId] = 0.;
-    }
-  };
-  ~tracKuma() {};
+    {
+        // 0: vertex, 1-3: MVTX, 4-5: INTT, 6: Cal
+        for(unsigned int layId = 0; layId < 7; layId++)
+        {
+            m_hitIs[layId] = false;
+            m_hitR[layId] = 0.;
+            m_hitZ[layId] = 0.;
+            m_hitPhi[layId] = 0.;
+            m_hitTheta[layId] = 0.;
+        }
+    };
+
+    ~tracKuma() {};
+    
     void setHitIs(Int_t layId, Bool_t is)
     {
         m_hitIs[layId] = is;
@@ -104,7 +107,7 @@ class tracKuma
         return m_hitTheta[layId];
     }
     
-    Int_t    getTrackParticleType(){
+    Int_t getTrackParticleType(){
         return m_particleType;
     }
     Double_t getTrackPhi(){
@@ -149,13 +152,14 @@ private:
     Double_t m_refPhi;
 };	
 
-struct hitStruct{
+struct hitStruct
+{
 	Double_t r;
-   Double_t z;
+    Double_t z;
 	Double_t phi;
-   Double_t eta;
-   Double_t pt;
-   Double_t energy;
+    Double_t eta;
+    Double_t pt;
+    Double_t energy;
 };
 
 // -----------------------------------------------------------------------

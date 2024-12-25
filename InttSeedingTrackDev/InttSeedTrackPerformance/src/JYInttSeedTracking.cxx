@@ -23,6 +23,7 @@
 #include <TStyle.h>
 #include <TCanvas.h>
 
+#include "JYInttSeedTracking.h"
 #include "SPHTracKuma.h"
 
 InttSeedTracking::InttSeedTracking(std::vector<tracKuma>& tracks,\
@@ -69,11 +70,11 @@ InttSeedTracking::~InttSeedTracking()
 
 // Hit Matching to get which hit point from one track
 void InttSeedTracking::HitMatching(std::vector<tracKuma>& tracks,\
-   std::vector<hitStruct > vFMvtxHits,\
-   std::vector<hitStruct > vSMvtxHits, std::vector<hitStruct > vTMvtxHits,\
-   std::vector<hitStruct > vIInttHits, std::vector<hitStruct > vOInttHits,\
-   std::vector<hitStruct > vEmcalHits,\
-   std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHcalHits)
+   std::vector<hitStruct> vFMvtxHits,\
+   std::vector<hitStruct> vSMvtxHits, std::vector<hitStruct> vTMvtxHits,\
+   std::vector<hitStruct> vIInttHits, std::vector<hitStruct> vOInttHits,\
+   std::vector<hitStruct> vEmcalHits,\
+   std::vector<hitStruct> vIHCalHits, std::vector<hitStruct> vOHcalHits)
 {
     Int_t numOfInttClus = vOInttHits.size();
     if(numOfInttClus == 0) return;
@@ -373,7 +374,7 @@ Double_t InttSeedTracking::AccuratePtEstimation(Double_t sagittaR, Double_t cent
     return sagittaMvtxInttEmcalPt;
 }
 
-// calculate the SagittaR by CircleFit
+// calculate the SagittaR by CircleFit ???
 void InttSeedTracking::SagittaRByCircleFit(Double_t& centerX, Double_t& centerY, Double_t& sagittaR, std::vector<Double_t > r, std::vector<Double_t > phi, Double_t oInttPhi, Double_t emcalPhi)
 { 
     Double_t basePhi = TMath::Pi()/4 - oInttPhi;
@@ -522,13 +523,6 @@ bool InttSeedTracking::ReturnHitsRPhiVect(std::vector<Double_t>& hitR, std::vect
     return true;
 }
 
-//  CalcSagittaPt (Calculate the track pt base on Sagitta R)
-Double_t CalcSagittaPt(Double_t sagittaR)
-{
-    Double_t pT = 0.3 * 1.4 * sagittaR*0.01; //qBR? 0.3 * 1.4 T *(R [cm -> m])
-    return pT;
-}
-
 // Track Theta(eta?) Estimation
 Double_t InttSeedTracking::EstimateRecoTheta(tracKuma trk, Int_t type)
 {
@@ -630,7 +624,7 @@ void InttSeedTracking::EstiVertex(Double_t& vX, Double_t& vY, Double_t sagittaR,
     vY = estimateVertexY;
 }
 
-void CrossLineCircle(Double_t& xv, Double_t& yv, Double_t xc, Double_t yc, Double_t R)
+void InttSeedTracking::CrossLineCircle(Double_t& xv, Double_t& yv, Double_t xc, Double_t yc, Double_t R)
 {
     // line (0,0) -> (xc, yc): y = slope*x
     // circle: (y-yc)^2 = R^2 - (x-xc)^2
@@ -653,7 +647,6 @@ void CrossLineCircle(Double_t& xv, Double_t& yv, Double_t xc, Double_t yc, Doubl
 
     return;
 }
-
 
 
 

@@ -1,7 +1,7 @@
 #ifndef InttSeedTrackPerformance_cxx
 #define InttSeedTrackPerformance_cxx
 
-#include "InttSeedTracking.h"
+#include "JYInttSeedTracking.h"
 #include "InttSeedTrackPerformance.h"
 
 
@@ -28,7 +28,7 @@ void InttSeedTrackPerformance::Loop(Int_t runNum)
    // == s0 == Event Loop 000000000000000000000000000000000000000000000000000000
    // for (Long64_t jentry=0; jentry<100;jentry++) {
    // for (Long64_t jentry=0; jentry< vTargetEvents.size();jentry++) {
-   for (Long64_t jentry=(1000*runNum); jentry<(1000*runNum + 1000); jentry++) {
+   for (Long64_t jentry=(1000*runNum); jentry<(1000*runNum + 200); jentry++) {
    // for (Long64_t jentry=0; jentry<nentries;jentry++) {
 
       Long64_t tempJEntry = jentry;
@@ -79,6 +79,8 @@ void InttSeedTrackPerformance::Loop(Int_t runNum)
    for(Int_t i = 0; i < m_vTargetEvents.size(); i++) std::cout << m_vTargetEvents.at(i) << ", ";
    std::cout << "};" << std::endl;
 }
+
+
 
 void InttSeedTrackPerformance::HistInit(){
    m_HINTTHitMap = new TH2D( "m_HINTTHitMap", "Global Hit Map;x [cm];y [cm]",

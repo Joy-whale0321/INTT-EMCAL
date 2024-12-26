@@ -1,15 +1,19 @@
-#! /bin/bash
-# export USER="$(id -u -n)"
-# export LOGNAME=${USER}
-# export HOME=/sphenix/u/${LOGNAME}
+#!/bin/bash
+date
 
-source /opt/sphenix/core/bin/sphenix_setup.sh -n ana.452
+source /opt/sphenix/core/bin/sphenix_setup.sh -n new
+# Additional commands for my local environment
+export SPHENIX=/sphenix/u/jzhang1
+export MYINSTALL=$SPHENIX/install
+source /opt/sphenix/core/bin/setup_local.sh $MYINSTALL
 
-echo $ROOT_INCLUDE_PATH | sed -e "s/:/\n/g"
+cd /sphenix/user/jzhang1/INTT-EMCAL/InttSeedingTrackDev/InttSeedTrackPerformance/macro
 
-process_id=$1
+runnumber=$2
 
-# root.exe -q -b Fun4All_Intt_RecoCluster.C\(${process_id}\)
-./Run ${process_id}
+echo "runnumber: $runnumber"
 
-echo all done process the 
+root.exe -b -q jyTrackPerformance.C\($runnumber\)
+echo Script done
+
+date

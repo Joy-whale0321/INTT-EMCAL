@@ -26,7 +26,7 @@
 #include "TArc.h"
 
 #include "SPHTracKuma.h"
-#include "InttSeedTracking.h"
+#include "JYInttSeedTracking.h"
 
 // Header file for the classes stored in the TTree if any.
 #include <vector>
@@ -162,33 +162,31 @@ public :
 
    std::vector<tracKuma> m_tracks;
 
-   std::vector<hitStruct > m_TruthParticle;
+   std::vector<hitStruct> m_TruthParticle;
 
-   std::vector<hitStruct > m_fMvtxHits;
-   std::vector<hitStruct > m_sMvtxHits;
-   std::vector<hitStruct > m_tMvtxHits;
+   std::vector<hitStruct> m_fMvtxHits;
+   std::vector<hitStruct> m_sMvtxHits;
+   std::vector<hitStruct> m_tMvtxHits;
 
-   std::vector<hitStruct > m_iInttHits;
-   std::vector<hitStruct > m_oInttHits;
+   std::vector<hitStruct> m_iInttHits;
+   std::vector<hitStruct> m_oInttHits;
 
-   std::vector<hitStruct > m_TpcHits;
+   std::vector<hitStruct> m_TpcHits;
 
-   std::vector<hitStruct > m_emcalHits;
-   std::vector<hitStruct > m_iHCalHits;
-   std::vector<hitStruct > m_oHCalHits;
+   std::vector<hitStruct> m_emcalHits;
+   std::vector<hitStruct> m_iHCalHits;
+   std::vector<hitStruct> m_oHCalHits;
 
-   std::vector<std::vector<hitStruct > > m_vTruthParticle;
+   std::vector<std::vector<hitStruct>> m_vTruthParticle;
 
-   std::vector<std::vector<hitStruct > > m_viInttHits;
-   std::vector<std::vector<hitStruct > > m_voInttHits;
+   std::vector<std::vector<hitStruct>> m_viInttHits;
+   std::vector<std::vector<hitStruct>> m_voInttHits;
 
-   std::vector<std::vector<hitStruct > > m_vTpcHits;
+   std::vector<std::vector<hitStruct>> m_vTpcHits;
 
-   std::vector<std::vector<hitStruct > > m_vemcalHits;
-   std::vector<std::vector<hitStruct > > m_viHCalHits;
-   std::vector<std::vector<hitStruct > > m_voHCalHits;
-   
-
+   std::vector<std::vector<hitStruct>> m_vemcalHits;
+   std::vector<std::vector<hitStruct>> m_viHCalHits;
+   std::vector<std::vector<hitStruct>> m_voHCalHits;
 
    TH2D* m_HINTTHitMap;
    TH2D* m_HGlobalHitMap;

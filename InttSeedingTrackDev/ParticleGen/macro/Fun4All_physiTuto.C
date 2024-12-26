@@ -50,13 +50,13 @@ R__LOAD_LIBRARY(libfun4all.so)
 R__LOAD_LIBRARY( libtutorial.so )
 
 int Fun4All_physiTuto(
-		     int nEvents = 5, //5,
-		     const double particle_pT = 1,
-         const double energy_range = 0.1,
-         const string particle_species = "Electron",
-         const string &output_directory = "/sphenix/user/jzhang1/INTT-EMCAL/InttSeedingTrackDev/ParticleGen/output/",
-         const string &output_filename = "results.root"
-		     )
+	int nEvents = 5,
+	const double particle_pT = 1,
+    const double energy_range = 0.1,
+    const string particle_species = "Electron",
+    const string &output_directory = "/sphenix/user/jzhang1/INTT-EMCAL/InttSeedingTrackDev/ParticleGen/output/",
+    const string &output_filename = "results.root"
+)
 {
   const int skip = 0;
 	const bool is_pythia = false;

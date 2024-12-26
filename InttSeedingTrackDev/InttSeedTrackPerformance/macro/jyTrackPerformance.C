@@ -1,9 +1,9 @@
-#include "src/JYInttSeedTrackPerformance.h"
-#include "src/JYInttSeedTrackPerformance.cxx"
+#include "../src/JYInttSeedTrackPerformance.h"
+#include "../src/JYInttSeedTrackPerformance.cxx"
 
-#include "src/JYInttSeedTracking.h"
-#include "src/JYInttSeedTracking.cxx"
-#include "src/SPHTracKuma.h"
+#include "../src/JYInttSeedTracking.h"
+#include "../src/JYInttSeedTracking.cxx"
+#include "../src/SPHTracKuma.h"
 
 #include <typeinfo>
 

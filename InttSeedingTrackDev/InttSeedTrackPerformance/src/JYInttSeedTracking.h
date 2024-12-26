@@ -103,7 +103,7 @@ public :
 
     inline Double_t FitFunctionPt(Double_t dPhi)
     {
-        Double_t pT = -0.00192479 -0.259884/dPhi  -0.0853628/(dPhi*dPhi);
+        Double_t pT = -0.00192479 -0.259884/dPhi -0.0853628/(dPhi*dPhi);
         return pT;
     }
 

@@ -10,7 +10,8 @@
 void jyTrackPerformance(Int_t runNum=0)
 {
     // work area
-    std::string fDir = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ParticleGen/output";
+    // std::string fDir = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ParticleGen/output";
+    std::string fDir = "/sphenix/user/jzhang1/INTT-EMCAL/InttSeedingTrackDev/InttSeedTrackPerformance/output";
 
     // input file
     TChain *tc = new TChain("tree");  

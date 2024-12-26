@@ -25,7 +25,7 @@ void InttSeedTrackPerformance::Loop(Int_t runNum)
     bool bTargetEV = false; // wether use the target event?
     std::vector<Int_t> vTargetEvents = {};
 
-    for (Long64_t jentry=(1000*runNum); jentry<(1000*runNum + 200); jentry++) 
+    for (Long64_t jentry=(1000*runNum); jentry<(1000*runNum + 1000); jentry++) 
     {
         Long64_t tempJEntry = jentry; // store the jentry
         if(bTargetEV) jentry =  vTargetEvents.at(jentry); //用指定的runnumber

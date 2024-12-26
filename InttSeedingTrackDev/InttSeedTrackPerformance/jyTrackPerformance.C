@@ -15,7 +15,7 @@ void jyTrackPerformance(Int_t runNum=0)
 
     // input file
     TChain *tc = new TChain("tree");  
-    std::string fInputName = fDir + "/singleE1500to2500MeVEta0.root";
+    std::string fInputName = fDir + "/singleE3500to4500MeVEta0.root";
     tc->Add(fInputName.c_str()); 
 
     // output file

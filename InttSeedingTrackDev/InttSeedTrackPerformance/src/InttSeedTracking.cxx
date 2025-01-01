@@ -1,3 +1,33 @@
+// InttSeedTracking
+//   ├── InttSeedTracking::InttSeedTracking (构造函数)
+//   │     ├── HitMatching (未使用，代码注释)
+//   │     ├── RecoTracksInttSeed2 (主重建流程)
+//   │     └── TrackPropertiesEstimation2 (轨迹属性估算)
+//   ├── InttSeedTracking::~InttSeedTracking (析构函数)
+//   │     ├── 清理数据
+//   │     └── 收缩内存
+//   ├── HitMatching (轨迹匹配流程)
+//   ├── RecoTracksInttSeed2
+//   │     ├── 遍历 oINTT 数据并进行匹配
+//   │     └── 遍历 iINTT 数据并进行匹配
+//   ├── InttSeedMatching (匹配算法核心)
+//   │     ├── Phi 和 Theta 范围检查
+//   │     ├── dR 和 Chi² 优化
+//   │     └── 校验轨迹有效性
+//   ├── TrackPropertiesEstimation2 (轨迹属性估算)
+//   │     ├── 估算 pT (CalcSagittaPt)
+//   │     ├── 重建角度 (EstimateRecoTheta)
+//   │     ├── 顶点估算 (EstiVertex)
+//   │     └── 粒子鉴别 (ParticleIdentify)
+//   ├── 其他辅助功能
+//   │     ├── TempINTTIOMatching (内外层匹配)
+//   │     ├── TempCalcdPhidR (计算 ΔPhi/ΔR)
+//   │     ├── AddMvtxHits (添加 MVTX 命中点)
+//   │     ├── RoughEstiSagittaCenter3Point (粗略圆拟合)
+//   │     ├── AccuratePtEstimation (精确动量估算)
+//   │     ├── ReturnHitsRPhiVect (命中点极坐标返回)
+//   │     └── ParticleIdentify (粒子属性)
+
 #ifndef InttSeedTracking_cxx
 #define InttSeedTracking_cxx
 
@@ -14,10 +44,18 @@ InttSeedTracking::InttSeedTracking(std::vector<tracKuma>& tracks,\
    std::vector<hitStruct > vEmcalHits,\
    std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHCalHits)
 {
-   HitMatching(tracks, vFMvtxHits, vSMvtxHits, vTMvtxHits, vIInttHits, vOInttHits,\
-      vEmcalHits, vIHCalHits, vOHCalHits);
+   // reco way1
+   // HitMatching(tracks, vFMvtxHits, vSMvtxHits, vTMvtxHits, vIInttHits, vOInttHits,\
+   //    vEmcalHits, vIHCalHits, vOHCalHits);
+   // for(Int_t iTrk = 0; iTrk < tracks.size(); iTrk++){
+   //    TrackPropertiesEstimation(tracks.at(iTrk), vFMvtxHits, vSMvtxHits, vTMvtxHits);
+   // }
+
+   // reco way2
+   RecoTracksInttSeed2(tracks, vFMvtxHits, vSMvtxHits, vTMvtxHits,\
+      vIInttHits, vOInttHits, vEmcalHits, vIHCalHits, vOHCalHits);
    for(Int_t iTrk = 0; iTrk < tracks.size(); iTrk++){
-      TrackPropertiesEstimation(tracks.at(iTrk), vFMvtxHits, vSMvtxHits, vTMvtxHits);
+      TrackPropertiesEstimation2(tracks.at(iTrk));
    }
 
    // Vertex estimation using all tracks
@@ -51,81 +89,355 @@ InttSeedTracking::~InttSeedTracking()
 
 
 void InttSeedTracking::HitMatching(std::vector<tracKuma>& tracks,\
+   std::vector<hitStruct > vFMvtxHits, std::vector<hitStruct > vSMvtxHits, std::vector<hitStruct > vTMvtxHits,\
+   std::vector<hitStruct > vIInttHits, std::vector<hitStruct > vOInttHits,\
+   std::vector<hitStruct > vEmcalHits,\
+   std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHcalHits)
+{
+    Int_t numOfInttClus = vOInttHits.size();
+    if(numOfInttClus == 0) return;
+
+    for(Int_t iOInttClus = 0; iOInttClus < numOfInttClus; iOInttClus++)
+    {
+        Double_t oInttPhi = vOInttHits.at(iOInttClus).phi;
+
+        Int_t closetIINTTID = TempINTTIOMatching(oInttPhi, vIInttHits);
+        if(closetIINTTID == 9999) continue;      
+        Int_t matchEcalID = TempInttCalMatch(closetIINTTID, iOInttClus, vIInttHits, vOInttHits, vEmcalHits);
+        if(matchEcalID == 9999) continue;
+
+        tracKuma trk;
+        Double_t tempTheta = 0.;
+
+        trk.setHitIs(0, true);
+        trk.setHitR(0, 0.);
+        trk.setHitZ(0, 0.);
+        trk.setHitPhi(0, 0.);
+        trk.setHitTheta(0, 0.);
+
+        trk.setHitIs(4, true);
+        trk.setHitR(4, vIInttHits.at(closetIINTTID).r);
+        trk.setHitZ(4, vIInttHits.at(closetIINTTID).z);
+        trk.setHitPhi(4, vIInttHits.at(closetIINTTID).phi);
+        tempTheta = 2*atan(std::exp(-vIInttHits.at(closetIINTTID).eta));
+        trk.setHitTheta(4, tempTheta);
+
+        trk.setHitIs(5, true);
+        trk.setHitR(5, vOInttHits.at(iOInttClus).r);
+        trk.setHitZ(5, vOInttHits.at(iOInttClus).z);
+        trk.setHitPhi(5, vOInttHits.at(iOInttClus).phi);
+        tempTheta = 2*atan(std::exp(-vOInttHits.at(iOInttClus).eta));
+        trk.setHitTheta(5, tempTheta);
+
+        trk.setHitIs(6, true);
+        trk.setHitR(6, vEmcalHits.at(matchEcalID).r);
+        trk.setHitZ(6, vEmcalHits.at(matchEcalID).z);
+        trk.setHitPhi(6, vEmcalHits.at(matchEcalID).phi);
+        tempTheta = 2*atan(std::exp(-vEmcalHits.at(matchEcalID).eta));
+        trk.setHitTheta(6, tempTheta);
+
+        Double_t calE = vEmcalHits.at(matchEcalID).energy;
+        calE = AddHCalE(vEmcalHits.at(matchEcalID).phi, calE, vIHCalHits, vOHcalHits); // kuma???
+        trk.setTrackE(calE);
+
+        tracks.push_back(trk);
+        // m_tracks.push_back(trk);
+    }
+}
+
+// == s == new tracking algorithm =====================
+bool InttSeedTracking::RecoTracksInttSeed2(std::vector<tracKuma>& tracks,\
    std::vector<hitStruct > vFMvtxHits,\
    std::vector<hitStruct > vSMvtxHits, std::vector<hitStruct > vTMvtxHits,\
    std::vector<hitStruct > vIInttHits, std::vector<hitStruct > vOInttHits,\
    std::vector<hitStruct > vEmcalHits,\
-   std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHcalHits){
-   Int_t numOfInttClus = vOInttHits.size();
-   if(numOfInttClus == 0) return;
-
-   for(Int_t iOInttClus = 0; iOInttClus < numOfInttClus; iOInttClus++){
-      Double_t oInttPhi = vOInttHits.at(iOInttClus).phi;
-      Double_t refPhi = oInttPhi;
-      refPhi = TMath::Pi()/2 - refPhi;
-
-      oInttPhi += refPhi;
-      Int_t closetIINTTID = TempINTTIOMatching(oInttPhi, refPhi, vIInttHits);
-      if(closetIINTTID == 9999) continue;
-      Int_t matchEcalID = TempInttCalMatch(closetIINTTID, iOInttClus, refPhi, vIInttHits, vOInttHits, vEmcalHits);
-      if(matchEcalID == 9999) continue;
-
-      tracKuma trk;
-      trk.setRefPhi(refPhi);
-      Double_t tempTheta = 0.;
-
-      trk.setHitIs(0, true);
-      trk.setHitR(0, 0.);
-      trk.setHitZ(0, 0.);
-      trk.setHitPhi(0, 0.);
-      trk.setHitTheta(0, 0.);
-      
-      trk.setHitIs(4, true);
-      trk.setHitR(4, vIInttHits.at(closetIINTTID).r);
-      trk.setHitZ(4, vIInttHits.at(closetIINTTID).z);
-      trk.setHitPhi(4, vIInttHits.at(closetIINTTID).phi);
-      tempTheta = 2*atan(std::exp(-vIInttHits.at(closetIINTTID).eta));
-      trk.setHitTheta(4, tempTheta);
-
-      trk.setHitIs(5, true);
-      trk.setHitR(5, vOInttHits.at(iOInttClus).r);
-      trk.setHitZ(5, vOInttHits.at(iOInttClus).z);
-      trk.setHitPhi(5, vOInttHits.at(iOInttClus).phi);
-      tempTheta = 2*atan(std::exp(-vOInttHits.at(iOInttClus).eta));
-      trk.setHitTheta(5, tempTheta);
-      
-      trk.setHitIs(6, true);
-      trk.setHitR(6, vEmcalHits.at(matchEcalID).r);
-      trk.setHitZ(6, vEmcalHits.at(matchEcalID).z);
-      trk.setHitPhi(6, vEmcalHits.at(matchEcalID).phi);
-      tempTheta = 2*atan(std::exp(-vEmcalHits.at(matchEcalID).eta));
-      trk.setHitTheta(6, tempTheta);
-
-      Double_t calE = vEmcalHits.at(matchEcalID).energy;
-      calE = AddHCalE(vEmcalHits.at(matchEcalID).phi, calE, vIHCalHits, vOHcalHits); // kuma???
-      trk.setTrackE(calE);
-
-      tracks.push_back(trk);
-      // m_tracks.push_back(trk);
+   std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHCalHits){
+   
+   std::vector<hitStruct > vRemainFMvtxHits;
+   std::vector<hitStruct > vRemainSMvtxHits;
+   std::vector<hitStruct > vRemainTMvtxHits;
+   std::vector<hitStruct > vRemainIInttHits;
+   std::copy(vFMvtxHits.begin(), vFMvtxHits.end(), std::back_inserter(vRemainFMvtxHits));
+   std::copy(vSMvtxHits.begin(), vSMvtxHits.end(), std::back_inserter(vRemainSMvtxHits));
+   std::copy(vTMvtxHits.begin(), vTMvtxHits.end(), std::back_inserter(vRemainTMvtxHits));
+   std::copy(vIInttHits.begin(), vIInttHits.end(), std::back_inserter(vRemainIInttHits));
+   
+   for(Int_t iOInttClus = 0; iOInttClus < vOInttHits.size(); iOInttClus++){
+      InttSeedMatching(tracks, 5, vOInttHits.at(iOInttClus),\
+         vRemainFMvtxHits, vRemainSMvtxHits, vRemainTMvtxHits, vRemainIInttHits,\
+            vEmcalHits, vIHCalHits, vOHCalHits);
+   }// == e == oIntt Loop
+   
+   // ChecKumaDaYo!!!! I cannot use this function because it makes too many tracks.
+   // This function is to recover tracks without oINTT 
+   // I think to use it, you need to remove used MVTX hits for upper algorithm.
+   // On the other hand, it will use long time...
+   for(Int_t iIInttClus = 0; iIInttClus < vRemainIInttHits.size(); iIInttClus++){
+      InttSeedMatching(tracks, 4, vRemainIInttHits.at(iIInttClus),\
+         vRemainFMvtxHits, vRemainSMvtxHits, vRemainTMvtxHits,\
+            vRemainIInttHits, vEmcalHits, vIHCalHits, vOHCalHits);
    }
+
+   return true;
+}
+
+bool InttSeedTracking::InttSeedMatching(std::vector<tracKuma>& tracks, Int_t inttId,\
+   hitStruct baseInttHit,\
+   std::vector<hitStruct >& vFMvtxHits,\
+   std::vector<hitStruct >& vSMvtxHits, std::vector<hitStruct >& vTMvtxHits,\
+   std::vector<hitStruct >& vIInttHits, std::vector<hitStruct > vEmcalHits,\
+   std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHCalHits){
+
+   Double_t inttTheta = 2*atan(std::exp(-baseInttHit.eta));
+   Double_t inttPhi = baseInttHit.phi;
+   Double_t inttR = baseInttHit.r;
+   
+   std::vector<tracKuma > v_tempTracks;
+   tracKuma bestTrk;
+   Int_t matchFMvtxId = 99999;
+   Int_t matchSMvtxId = 99999;
+   Int_t matchTMvtxId = 99999;
+   Int_t matchIInttId = 99999;
+   Double_t smallestChi = 9999.;
+   Int_t matchiECalID = 9999;
+   for(Int_t iECalT = 0; iECalT < vEmcalHits.size(); iECalT++){
+      Double_t ecalE = vEmcalHits.at(iECalT).energy;
+      if(ecalE < m_EcalEThre) continue;
+      
+      Double_t ecalTheta = 2*atan(std::exp(-vEmcalHits.at(iECalT).eta));
+      // ChecKumaDaYo!!! you need to optimize the search range
+      if((inttTheta - TMath::Pi()/10 < ecalTheta)&&(ecalTheta < inttTheta + TMath::Pi()/10)){
+         Int_t minChiSqrtEMCalTrkId = 9999;
+         Double_t minChiSqrt = 9999.;
+         Double_t ecalPhi = vEmcalHits.at(iECalT).phi;
+         // ChecKumaDaYo!!! you need to optimize the search range
+         if((inttPhi - TMath::Pi()/10 < ecalPhi)&&(ecalPhi < inttPhi + TMath::Pi()/10)){
+            tracKuma tempTrack;
+
+            tempTrack.setHitIs(0, true);
+            tempTrack.setHitR(0, 0.);
+            tempTrack.setHitZ(0, 0.);
+            tempTrack.setHitPhi(0, 0.);
+            tempTrack.setHitTheta(0, 0.);
+
+            SetHitParaInTrack(tempTrack, inttId, baseInttHit); // set INTT parameters
+            SetHitParaInTrack(tempTrack, 6, vEmcalHits.at(iECalT)); // set ECal parameters
+
+            Double_t HitsXY[3][2];
+            Set3PointsXY(HitsXY, tempTrack, 2); // convert r, phi -> x, y for the three points.
+            Double_t sagittaR = 9999.;
+            Double_t cX = 0.;
+            Double_t cY = 0.;
+            // estimate the circle using three points roughly
+            RoughEstiSagittaCenter3Point(sagittaR, cX, cY, HitsXY);
+            tempTrack.setTrackSagR(sagittaR);
+            tempTrack.setTrackSagX(cX);
+            tempTrack.setTrackSagY(cY);
+
+            Int_t iInttMatchId = 9999;
+            if(inttId == 5){
+               Double_t iInttClusX = 9999.;
+               Double_t iInttClusY = 9999.;
+               Double_t iInttDRThre = 1.0;
+               // searching for the best iINTT hit satisfying dR threshold
+               // ChecKumaDaYo!!! you should optimize the dR threshold iInttDRThre
+               if(FindHitsOnCircle(iInttMatchId, iInttClusX, iInttClusY, \
+                  sagittaR, cX, cY, vIInttHits, iInttDRThre)){         
+                  SetHitParaInTrack(tempTrack, 4, vIInttHits.at(iInttMatchId));
+               }      
+            }
+            
+            // searching for the best MVTX hits satisfying dR threshold
+            // ChecKumaDaYo!!! you should optimize the dR threshold dRThre_Mvtx
+            Int_t seleFMvtxId = 99999;
+            Int_t seleSMvtxId = 99999;
+            Int_t seleTMvtxId = 99999;
+            Double_t dRThre_Mvtx = 5.;
+            AddMvtxHits(tempTrack, vFMvtxHits, vSMvtxHits, vTMvtxHits, dRThre_Mvtx,\
+               seleFMvtxId, seleSMvtxId, seleTMvtxId);
+            Double_t dRChi = EstiChiTrkOnCircle(tempTrack, cX, cY, sagittaR);
+            if(minChiSqrt > dRChi){
+               minChiSqrt = dRChi;
+               bestTrk = tempTrack;
+               matchFMvtxId = seleFMvtxId;
+               matchSMvtxId = seleSMvtxId;
+               matchTMvtxId = seleTMvtxId;
+               matchIInttId = iInttMatchId;
+            }
+         }// == e == Ecal Phi range if
+      }// == e == Ecal Theta range if
+   }// == e == Ecal Loop
+   
+   // Judge the reconstructed track is available or not.
+   // The requirements: 
+   // (1) It has both iINTT and oINTT hits
+   // (2) Single INTT and two MVTX hits
+   if(!CheckTrkRequirements(bestTrk)) return false;
+   RefindCalHit(bestTrk, vEmcalHits, vIHCalHits, vOHCalHits);
+   tracks.push_back(bestTrk);
+   if(matchFMvtxId!=99999) vFMvtxHits.erase(vFMvtxHits.begin() + matchFMvtxId);
+   if(matchSMvtxId!=99999) vSMvtxHits.erase(vSMvtxHits.begin() + matchSMvtxId);
+   if(matchTMvtxId!=99999) vTMvtxHits.erase(vTMvtxHits.begin() + matchTMvtxId);
+   if((inttId == 5)&&(matchIInttId!=9999)) vIInttHits.erase(vIInttHits.begin() + matchIInttId);
+
+   return true;
 }
 
 
+Double_t InttSeedTracking::EstiChiTrkOnCircle(tracKuma trk,\
+   Double_t cX, Double_t cY, Double_t sagittaR){
+   Double_t chi = 0.;
+   Double_t numOfHits = 0.;
+   for(Int_t iHit = 0; iHit < 7; iHit++){
+      Double_t hitX = trk.getHitR(iHit)*cos(trk.getHitPhi(iHit));
+      Double_t hitY = trk.getHitR(iHit)*sin(trk.getHitPhi(iHit));
 
-Int_t InttSeedTracking::TempINTTIOMatching(Double_t oINTTPhi, Double_t refPhi,\
-   std::vector<hitStruct > vIInttHits){
+      if(!trk.getHitIs(iHit)) continue;
+      chi += std::sqrt((hitX - cX)*(hitX - cX) + (hitY - cY)*(hitY - cY)) - sagittaR;
+      numOfHits++;
+   }
+   chi /= numOfHits;
+   
+   return chi;
+}
+
+bool InttSeedTracking::CheckTrkRequirements(tracKuma trk){
+   if(trk.getHitIs(4)) return true;
+   Int_t numMvtx = 0;
+   for(Int_t iMvtx = 1; iMvtx < 4; iMvtx++) if(trk.getHitIs(iMvtx)) numMvtx += 1;
+
+   if(numMvtx > 1) return true;
+   else return false; 
+}
+
+void InttSeedTracking::RefindCalHit(tracKuma trk, std::vector<hitStruct > vEmcalHits,\
+   std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHcalHits){
+   std::vector<Int_t > subDetIds = {1, 2, 3, 4, 5};
+   std::vector<Double_t > vHitR = {};
+   std::vector<Double_t > vHitsPhi = {};
+   if(!ReturnHitsRPhiVect(vHitR, vHitsPhi, subDetIds, trk)) return;
+   Double_t cX = 0.;
+   Double_t cY = 0.;
+   Double_t sagittaR = 0.;
+   Double_t tempHitIInttPhi = trk.getHitPhi(4);
+   Double_t tempHitEmcalPhi = trk.getHitPhi(6);
+   // ChecKumaDaYo!!! it does not work in only sPHENIX server?????
+   // SagittaRByCircleFit(cX, cY, sagittaR, vHitR, vHitsPhi, trk.getHitPhi(4), trk.getHitPhi(6));
+
+   Double_t targetCalX = 0.;
+   Double_t targetCalY = 0.;
+   CrossCircleCircle(targetCalX, targetCalY, cX, cY, sagittaR, trk.getHitPhi(4));
+   Double_t calHighestE = 0.;
+   Int_t highestECalId = 99999;
+   for(Int_t iECalT = 0; iECalT < vEmcalHits.size(); iECalT++){
+      Double_t ecalE = vEmcalHits.at(iECalT).energy;
+      if(ecalE < m_EcalEThre) continue;
+      if(ecalE < calHighestE) continue;
+      
+      Double_t tempEcalPhi = vEmcalHits.at(iECalT).phi;
+      Double_t targetECalPhi = std::tan(targetCalY/targetCalX);
+      if((targetECalPhi < 0)&&(cX < 0)) targetECalPhi += TMath::Pi();
+      else if((targetECalPhi > 0)&&(cX < 0)) targetECalPhi -= TMath::Pi();
+      if((targetECalPhi - 0.05 < tempEcalPhi)&&(tempEcalPhi < targetECalPhi + 0.05)){
+         calHighestE = ecalE;
+         highestECalId = iECalT;
+      }
+   }
+   
+   if(highestECalId == 99999) return;
+   trk.setHitIs(6, true);
+   trk.setHitR(6, vEmcalHits.at(highestECalId).r);
+   trk.setHitZ(6, vEmcalHits.at(highestECalId).z);
+   trk.setHitPhi(6, vEmcalHits.at(highestECalId).phi);
+   Double_t ecalTheta = 2*atan(std::exp(-vEmcalHits.at(highestECalId).eta));
+   trk.setHitTheta(6, ecalTheta);
+   
+   // ChecKumaDaYo!!!
+   CalESumAndCorrPosi(trk, vEmcalHits, vIHCalHits, vOHcalHits);
+
+   // Double_t calE = vEmcalHits.at(highestECalId).energy;
+   // // ChecKumaDaYo!!!
+   // calE = AddHCalE(vEmcalHits.at(highestECalId).phi, calE, vIHCalHits, vOHcalHits);
+   // trk.setTrackE(calE);
+
+}
+
+void InttSeedTracking::CalESumAndCorrPosi(tracKuma trk, std::vector<hitStruct > vEmcalHits,\
+    std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHCalHits)
+{
+    Double_t refCalPhi = trk.getHitPhi(6);
+    Double_t refCalTheta = trk.getHitTheta(6);
+    Double_t TotEMCalE = 0.;
+    Double_t ModifEMCalPhi = 0.;
+    Double_t ModifEMCalTheta = 0.;
+    for(Int_t iEmcal = 0; iEmcal < vEmcalHits.size(); iEmcal++)
+    {
+        Double_t hitTheta = 2*atan(std::exp(-vEmcalHits.at(iEmcal).eta));
+        if((hitTheta < refCalTheta - TMath::Pi()/20)&&(refCalTheta + TMath::Pi()/20 < hitTheta)) continue;
+        if((vEmcalHits.at(iEmcal).phi < refCalPhi - TMath::Pi()/20)&&(refCalPhi + TMath::Pi()/20 < vEmcalHits.at(iEmcal).phi)) continue;
+        
+        TotEMCalE += vEmcalHits.at(iEmcal).energy;
+        ModifEMCalPhi += vEmcalHits.at(iEmcal).energy*vEmcalHits.at(iEmcal).phi;
+        ModifEMCalTheta += vEmcalHits.at(iEmcal).energy*hitTheta;
+    }
+    ModifEMCalPhi /= TotEMCalE;
+    ModifEMCalTheta /= TotEMCalE;
+
+    refCalPhi = ModifEMCalPhi;
+    for(Int_t iIHcal = 0; iIHcal < vIHCalHits.size(); iIHcal++)
+    {
+        Double_t hitTheta = 2*atan(std::exp(-vIHCalHits.at(iIHcal).eta));
+        if((hitTheta < refCalTheta - TMath::Pi()/20)&&(refCalTheta + TMath::Pi()/20 < hitTheta)) continue;
+        if((vIHCalHits.at(iIHcal).phi < refCalPhi - TMath::Pi()/20)&&(refCalPhi + TMath::Pi()/20 < vIHCalHits.at(iIHcal).phi)) continue;
+        
+        TotEMCalE += vIHCalHits.at(iIHcal).energy;
+    }
+
+    for(Int_t iOHcal = 0; iOHcal < vOHCalHits.size(); iOHcal++)
+    {
+        Double_t hitTheta = 2*atan(std::exp(-vOHCalHits.at(iOHcal).eta));
+        if((hitTheta < refCalTheta - TMath::Pi()/20)&&(refCalTheta + TMath::Pi()/20 < hitTheta)) continue;
+        if((vOHCalHits.at(iOHcal).phi < refCalPhi - TMath::Pi()/20)&&(refCalPhi + TMath::Pi()/20 < vIHCalHits.at(iOHcal).phi)) continue;
+        TotEMCalE += vIHCalHits.at(iOHcal).energy;
+    }
+    trk.setHitPhi(6, ModifEMCalPhi);
+    trk.setHitTheta(6, ModifEMCalTheta);
+    trk.setTrackE(TotEMCalE);
+}
+
+void InttSeedTracking::TrackPropertiesEstimation2(tracKuma& trk){
+   Double_t dPhiOInttEmcal = dPhiOInttEmcalEsti(trk);
+   Double_t recoPt = CalcSagittaPt(trk.getTrackSagR());
+   // Double_t recoPt = FitFunctionPt(dPhiOInttEmcal);
+   trk.setTrackPt(recoPt);
+   
+   Double_t recoTheta = EstimateRecoTheta(trk, 1);
+   trk.setTrackTheta(recoTheta);
+
+   Double_t recoP = recoPt/sin(recoTheta);
+   trk.setTrackP(recoP);
+
+   EstiVertex(trk);
+
+   ParticleIdentify(trk);
+}
+// == e == new tracking algorithm =====================
+
+
+Int_t InttSeedTracking::TempINTTIOMatching(Double_t oINTTPhi, std::vector<hitStruct > vIInttHits){
    Double_t minDeltaPhi = 9999.;
    Int_t closestIINTTCluID = 9999;
    Int_t numOfIInttClu = vIInttHits.size();
 
    if(numOfIInttClu == 0) return 9999;
-   for(Int_t iINTTClu = 0; iINTTClu < numOfIInttClu ;iINTTClu++){
-      Double_t iInttPhi =  vIInttHits.at(iINTTClu).phi + refPhi;
-      Double_t deltaPhi = std::abs(iInttPhi - oINTTPhi);
+   for(Int_t iINTTClu = 0; iINTTClu < numOfIInttClu; iINTTClu++){
+      Double_t iInttPhi =  vIInttHits.at(iINTTClu).phi;
+      Double_t dPhi = std::abs(iInttPhi - oINTTPhi);
+      if(std::abs(dPhi) > TMath::Pi()) dPhi += (-1) * (dPhi/std::abs(dPhi)) * 2*TMath::Pi();
 
       // checkumaDAYO!!! need to optimize the matching range.
-      if((minDeltaPhi > deltaPhi)&&(deltaPhi > m_InttMatchPhiMin)&&(deltaPhi < m_InttMatchPhiMax)){
-         minDeltaPhi = deltaPhi;
+      if((minDeltaPhi > dPhi)&&(dPhi > m_InttMatchPhiMin)&&(dPhi < m_InttMatchPhiMax)){
+         minDeltaPhi = dPhi;
          closestIINTTCluID = iINTTClu;
       }
    }
@@ -133,13 +445,14 @@ Int_t InttSeedTracking::TempINTTIOMatching(Double_t oINTTPhi, Double_t refPhi,\
 }
 
 
-Double_t InttSeedTracking::TempCalcdPhidR(Int_t iInttID, Int_t oInttID, Double_t refPhi,\
+Double_t InttSeedTracking::TempCalcdPhidR(Int_t iInttID, Int_t oInttID,\
    std::vector<hitStruct > vIInttHits, std::vector<hitStruct > vOInttHits){
-   Double_t dPhidR = 0.;   
-   Double_t iInttPhi = vIInttHits.at(iInttID).phi + refPhi;
-   Double_t oInttPhi = vOInttHits.at(oInttID).phi + refPhi;
+   Double_t dPhidR = 0.;
+   Double_t iInttPhi = vIInttHits.at(iInttID).phi;
+   Double_t oInttPhi = vOInttHits.at(oInttID).phi;
 
    Double_t dPhi = oInttPhi - iInttPhi;
+   if(std::abs(dPhi) > TMath::Pi()) dPhi += (-1) * (dPhi/std::abs(dPhi)) * 2*TMath::Pi();
    Double_t dR = vOInttHits.at(oInttID).r - vIInttHits.at(iInttID).r;
 
    dPhidR = dPhi/dR;
@@ -148,7 +461,7 @@ Double_t InttSeedTracking::TempCalcdPhidR(Int_t iInttID, Int_t oInttID, Double_t
 }
 
 
-Int_t InttSeedTracking::TempInttCalMatch(Int_t iInttID, Int_t oInttID, Double_t refPhi,\
+Int_t InttSeedTracking::TempInttCalMatch(Int_t iInttID, Int_t oInttID,
    std::vector<hitStruct > vIInttHits, std::vector<hitStruct > vOInttHits,\
    std::vector<hitStruct > vEmcalHits){
    Int_t matchiECalID = 9999;
@@ -159,21 +472,24 @@ Int_t InttSeedTracking::TempInttCalMatch(Int_t iInttID, Int_t oInttID, Double_t 
       // checkumaDAYO!!! need to optimize the calorimeter threshold energy.
       if(ecalE < m_EcalEThre) continue;
 
-      Double_t dPhidR = TempCalcdPhidR(iInttID, oInttID, refPhi, vIInttHits, vOInttHits);
+      Double_t dPhidR = TempCalcdPhidR(iInttID, oInttID, vIInttHits, vOInttHits);
       Double_t dRInttEmCal = m_ECalR - vOInttHits.at(oInttID).r;
       Double_t phiRangeMin = 0.;
       Double_t phiRangeMax = 0.;
 
       // checkumaDAYO!!! need to optimize the matching range.
       if(dPhidR < 0){
-         phiRangeMin = TMath::Pi()/2 + (dPhidR * dRInttEmCal - 0.177);
-         phiRangeMax = TMath::Pi()/2 + 0.087;
+         phiRangeMin = vOInttHits.at(oInttID).phi + (dPhidR * dRInttEmCal - 0.177);
+         phiRangeMax = vOInttHits.at(oInttID).phi + 0.087;
       }else{
-         phiRangeMin = TMath::Pi()/2 - 0.087;
-         phiRangeMax = TMath::Pi()/2 + (dPhidR * dRInttEmCal + 0.177);
+         phiRangeMin = vOInttHits.at(oInttID).phi - 0.087;
+         phiRangeMax = vOInttHits.at(oInttID).phi + (dPhidR * dRInttEmCal + 0.177);
       }
       
-      Double_t emcalPhi = vEmcalHits.at(iECalT).phi + refPhi;
+      Double_t emcalPhi = vEmcalHits.at(iECalT).phi;
+      if((phiRangeMin < - TMath::Pi())&&(phiRangeMin > - TMath::Pi())&&(emcalPhi > 0)) emcalPhi -= 2*TMath::Pi();
+      else if((phiRangeMin < TMath::Pi())&&(phiRangeMax > TMath::Pi())&&(emcalPhi < 0)) emcalPhi += 2*TMath::Pi();
+
       if((phiRangeMin < emcalPhi)&&(emcalPhi < phiRangeMax)){
          if(matchiECalE < ecalE){
             matchiECalID = iECalT;
@@ -184,6 +500,7 @@ Int_t InttSeedTracking::TempInttCalMatch(Int_t iInttID, Int_t oInttID, Double_t 
    }
    // std::cout << "matchiECalE = " << matchiECalE << std::endl;
    return matchiECalID;
+
 }
  
 
@@ -217,7 +534,8 @@ Double_t InttSeedTracking::AddHCalE(Double_t emcalPhi, Double_t emcalE,\
 }
 
 void InttSeedTracking::AddMvtxHits(tracKuma& trk, std::vector<hitStruct > vFMvtxHits,\
-   std::vector<hitStruct > vSMvtxHits, std::vector<hitStruct > vTMvtxHits){
+   std::vector<hitStruct > vSMvtxHits, std::vector<hitStruct > vTMvtxHits, Double_t dRThre,\
+   Int_t& seleFMvtxId, Int_t& seleSMvtxId, Int_t& seleTMvtxId){
    Double_t sagiR = trk.getTrackSagR();
    Double_t sagiX = trk.getTrackSagX();
    Double_t sagiY = trk.getTrackSagY();
@@ -227,28 +545,22 @@ void InttSeedTracking::AddMvtxHits(tracKuma& trk, std::vector<hitStruct > vFMvtx
       Double_t mvtxClusX = 9999.;
       Double_t mvtxClusY = 9999.;
       if(iMvtxLay == 0){
-         if(MatchingMvtxHits(mvtxMatchId, mvtxClusX, mvtxClusY, sagiR, sagiX, sagiY, vFMvtxHits)){
-            trk.setHitIs(1, true);
-            trk.setHitR(1, vFMvtxHits.at(mvtxMatchId).r);
-            trk.setHitPhi(1, vFMvtxHits.at(mvtxMatchId).phi);
-            Double_t tempTheta = 2*atan(std::exp(-vFMvtxHits.at(mvtxMatchId).eta));
-            trk.setHitTheta(1, tempTheta);
+         if(FindHitsOnCircle(mvtxMatchId, mvtxClusX, mvtxClusY, sagiR, sagiX, sagiY, \
+            vFMvtxHits, dRThre)){
+            SetHitParaInTrack(trk, 1, vFMvtxHits.at(mvtxMatchId));
+            seleFMvtxId = mvtxMatchId;
          }
       }else if(iMvtxLay == 1){
-         if(MatchingMvtxHits(mvtxMatchId, mvtxClusX, mvtxClusY, sagiR, sagiX, sagiY, vSMvtxHits)){
-            trk.setHitIs(2, true);
-            trk.setHitR(2, vSMvtxHits.at(mvtxMatchId).r);
-            trk.setHitPhi(2, vSMvtxHits.at(mvtxMatchId).phi);
-            Double_t tempTheta = 2*atan(std::exp(-vSMvtxHits.at(mvtxMatchId).eta));
-            trk.setHitTheta(2, tempTheta);
+         if(FindHitsOnCircle(mvtxMatchId, mvtxClusX, mvtxClusY, sagiR, sagiX, sagiY,\
+            vSMvtxHits, dRThre)){
+            SetHitParaInTrack(trk, 2, vSMvtxHits.at(mvtxMatchId));
+            seleSMvtxId = mvtxMatchId;
          }
       }else if(iMvtxLay == 2){
-         if(MatchingMvtxHits(mvtxMatchId, mvtxClusX, mvtxClusY, sagiR, sagiX, sagiY, vTMvtxHits)){
-            trk.setHitIs(3, true);
-            trk.setHitR(3, vTMvtxHits.at(mvtxMatchId).r);
-            trk.setHitPhi(3, vTMvtxHits.at(mvtxMatchId).phi);
-            Double_t tempTheta = 2*atan(std::exp(-vTMvtxHits.at(mvtxMatchId).eta));
-            trk.setHitTheta(3, tempTheta);
+         if(FindHitsOnCircle(mvtxMatchId, mvtxClusX, mvtxClusY, sagiR, sagiX, sagiY,\
+            vTMvtxHits, dRThre)){
+            SetHitParaInTrack(trk, 3, vTMvtxHits.at(mvtxMatchId));
+            seleTMvtxId = mvtxMatchId;
          }
       }
    }
@@ -258,31 +570,18 @@ void InttSeedTracking::TrackPropertiesEstimation(tracKuma& trk, std::vector<hitS
    std::vector<hitStruct > vSMvtxHits, std::vector<hitStruct > vTMvtxHits){
    Double_t recoPt = TrackPtEstimation(trk, vFMvtxHits, vSMvtxHits, vTMvtxHits);
    trk.setTrackPt(recoPt);
-         
+   
    Double_t recoTheta = EstimateRecoTheta(trk, 1);
    trk.setTrackTheta(recoTheta);
 
    Double_t recoP = recoPt/sin(recoTheta);
-   Double_t recoE = trk.getTrackE();
-   Double_t EOverP = recoE/recoP;
+   trk.setTrackP(recoP);
+   // Double_t recoE = trk.getTrackE();
+   // Double_t EOverP = recoE/recoP;
 
-   Double_t vtxX = 0.;
-   Double_t vtxY = 0.;
-   // EstiVertex(vtxX, vtxY, trk.getTrackSagR(), trk.getTrackSagX(), trk.getTrackSagY());
-   CrossLineCircle(vtxX, vtxY, trk.getTrackSagX(), trk.getTrackSagY(), trk.getTrackSagR());
-   Double_t vtxR = std::sqrt(vtxX*vtxX + vtxY*vtxY);
-   Double_t vtxPhi = atan(vtxY/vtxX);
-   if((vtxPhi < 0)&&(vtxX < 0)) vtxPhi += TMath::Pi();
-   else if((vtxPhi > 0)&&(vtxY < 0)) vtxPhi -= TMath::Pi();
-   trk.setHitR(0, vtxR);
-   trk.setHitPhi(0, vtxPhi);
+   EstiVertex(trk);
 
-   Double_t trkPhi = -1/std::tan(vtxPhi);
-   Double_t vtxZ = 0.;
-   if(trk.getHitIs(6)){
-      vtxZ = trk.getHitZ(6) - trk.getHitZ(6)/std::tan(recoTheta);
-   }
-   trk.setHitZ(0, vtxZ);
+   ParticleIdentify(trk);
 }
 
 Double_t InttSeedTracking::TrackPtEstimation(tracKuma& trk, std::vector<hitStruct > vFMvtxHits,\
@@ -345,7 +644,12 @@ Double_t InttSeedTracking::AccuratePtEstimation(\
       sagittaMvtxInttEmcalPt = CalcSagittaPt(sagittaR);
    }
 
-   AddMvtxHits(trk, vFMvtxHits, vSMvtxHits, vTMvtxHits);
+   Int_t seleFMvtxId = 99999;
+   Int_t seleSMvtxId = 99999;
+   Int_t seleTMvtxId = 99999;
+   Double_t dRThre_Mvtx = 5.;
+   AddMvtxHits(trk, vFMvtxHits, vSMvtxHits, vTMvtxHits, dRThre_Mvtx,\
+      seleFMvtxId, seleSMvtxId, seleTMvtxId);
    
    std::vector<Int_t > subDetIds_MvtxInttEmcal = {1, 2, 3, 4, 5, 6};
    std::vector<Double_t > hitsR_MvtxInttEmcal = {};
@@ -353,7 +657,7 @@ Double_t InttSeedTracking::AccuratePtEstimation(\
    if(ReturnHitsRPhiVect(hitsR_MvtxInttEmcal, hitsPhi_MvtxInttEmcal, subDetIds_MvtxInttEmcal, trk)){
       Double_t tempHitOInttPhi = trk.getHitPhi(4);
       Double_t tempHitEmcalPhi = trk.getHitPhi(6);
-      SagittaRByCircleFit(centerX, centerY, sagittaR, hitsR_MvtxInttEmcal, hitsPhi_MvtxInttEmcal, 
+      SagittaRByCircleFit(centerX, centerY, sagittaR, hitsR_MvtxInttEmcal, hitsPhi_MvtxInttEmcal,\
       tempHitOInttPhi, tempHitEmcalPhi);
       sagittaMvtxInttEmcalPt = CalcSagittaPt(sagittaR);
    }
@@ -367,7 +671,6 @@ Double_t InttSeedTracking::AccuratePtEstimation(\
 
 void InttSeedTracking::SagittaRByCircleFit(Double_t& centerX, Double_t& centerY, Double_t& sagittaR,
    std::vector<Double_t > r, std::vector<Double_t > phi, Double_t oInttPhi, Double_t emcalPhi){
-   
    Double_t basePhi = TMath::Pi()/4 - oInttPhi;
    bool bFlip = false;
    if((emcalPhi + basePhi)  > TMath::Pi()/4) bFlip = true;
@@ -381,7 +684,7 @@ void InttSeedTracking::SagittaRByCircleFit(Double_t& centerX, Double_t& centerY,
       if(bFlip) tempPhi = TMath::Pi()/2 - tempPhi;
       hHitMap->Fill(r.at(iHit)*cos(tempPhi), r.at(iHit)*sin(tempPhi));
    }
-   
+
    Double_t tempCPhi = std::atan(centerY/centerX);
    if((tempCPhi < 0)&&(centerX < 0)) tempCPhi += TMath::Pi();
    else if((tempCPhi > 0)&&(centerX < 0)) tempCPhi -= TMath::Pi();
@@ -390,7 +693,6 @@ void InttSeedTracking::SagittaRByCircleFit(Double_t& centerX, Double_t& centerY,
    Double_t tempCR = std::sqrt(centerX*centerX + centerY*centerY);
    Double_t tempCX = tempCR*std::cos(tempCPhi);
    Double_t tempCY = tempCR*std::sin(tempCPhi);
-
       
    // [0]: radius, [1]: x center, [2]: y center 
    auto fCircle = new TF1("fCircle", "std::sqrt([0]*[0]-(x-[1])*(x-[1]))+[2]", -300, 300);
@@ -398,7 +700,7 @@ void InttSeedTracking::SagittaRByCircleFit(Double_t& centerX, Double_t& centerY,
    fCircle->SetParameter(1, tempCX);
    fCircle->SetParameter(2, tempCY);
    
-   hHitMap->Fit("fCircle", "QM");
+   hHitMap->Fit("fCircle", "Q");
    sagittaR = fCircle->GetParameter(0);
    centerX = fCircle->GetParameter(1);
    centerY = fCircle->GetParameter(2);
@@ -417,53 +719,55 @@ void InttSeedTracking::SagittaRByCircleFit(Double_t& centerX, Double_t& centerY,
    return;
 }
 
-bool InttSeedTracking::MatchingMvtxHits(Int_t& mvtxMatchId,\
-   Double_t& mvtxClusX, Double_t& mvtxClusY,\
-   Double_t sagittaR, Double_t centerX, Double_t centerY, std::vector<hitStruct > vMvtxHits){
-   Double_t minDeltaRMvtx = 99999.;
+bool InttSeedTracking::FindHitsOnCircle(Int_t& hitMatchId,\
+   Double_t& hitX, Double_t& hitY,\
+   Double_t sagittaR, Double_t centerX, Double_t centerY, std::vector<hitStruct > vHits,\
+   Double_t dRThre){
+   Double_t minDeltaR = 99999.;
 
-   Int_t vMvtxCluNum = vMvtxHits.size();
-   if(vMvtxCluNum == 0) return false;
-   for(Int_t iClu=0; iClu< vMvtxCluNum; iClu++){
-      Double_t cluX = vMvtxHits.at(iClu).r*std::cos(vMvtxHits.at(iClu).phi);
-      Double_t cluY = vMvtxHits.at(iClu).r*std::sin(vMvtxHits.at(iClu).phi);
+   if(vHits.size() == 0) return false;
+   for(Int_t iHit=0; iHit< vHits.size(); iHit++){
+      Double_t tempHitX = vHits.at(iHit).r*std::cos(vHits.at(iHit).phi);
+      Double_t tempHitY = vHits.at(iHit).r*std::sin(vHits.at(iHit).phi);
 
-      Double_t dX = cluX - centerX;
-      Double_t dY = cluY - centerY;
+      Double_t dX = tempHitX - centerX;
+      Double_t dY = tempHitY - centerY;
       Double_t dR = std::sqrt(dX*dX + dY*dY);
-
-      Double_t DeltaRMvtx = std::abs(dR - sagittaR);
-      if(minDeltaRMvtx > DeltaRMvtx){
-         mvtxMatchId = iClu;
-         minDeltaRMvtx = DeltaRMvtx;
+      
+      Double_t deltaR = std::abs(dR - sagittaR);
+      if(deltaR > dRThre) continue;
+      if(minDeltaR > deltaR){
+         hitMatchId = iHit;
+         minDeltaR = deltaR;
       }
    }
    
-   if(mvtxMatchId == 9999) return false;
-   mvtxClusX = vMvtxHits.at(mvtxMatchId).r * std::cos(vMvtxHits.at(mvtxMatchId).phi);
-   mvtxClusY = vMvtxHits.at(mvtxMatchId).r * std::sin(vMvtxHits.at(mvtxMatchId).phi);
-   
+   if(hitMatchId == 9999) return false;
+   hitX = vHits.at(hitMatchId).r * std::cos(vHits.at(hitMatchId).phi);
+   hitY = vHits.at(hitMatchId).r * std::sin(vHits.at(hitMatchId).phi);
+
    return true;
 }
 
-void InttSeedTracking::EstiVertex(Double_t& vX, Double_t& vY, Double_t sagittaR, Double_t centerX, Double_t centerY){
-   Double_t estimateVertexX = 9999.;
-   Double_t estimateVertexY = 9999.;
-   Double_t minDR = 9999.;
-   for(Int_t xScanBin = -100; xScanBin < 100; xScanBin++){
-      Double_t xc = 1.* xScanBin;
-      Double_t yc =std::sqrt(sagittaR*sagittaR-(xc-centerX)*(xc-centerX))+centerY;
 
-      Double_t dR = std::sqrt(xc*xc + yc*yc);
+void InttSeedTracking::EstiVertex(tracKuma trk){
+   Double_t vtxX = 0.;
+   Double_t vtxY = 0.;
 
-      if(minDR > dR){
-         minDR = dR;
-         estimateVertexX = xc;
-         estimateVertexY = yc;
-      }
+   CrossLineCircle(vtxX, vtxY, trk.getTrackSagX(), trk.getTrackSagY(), trk.getTrackSagR());
+   Double_t vtxR = std::sqrt(vtxX*vtxX + vtxY*vtxY);
+   Double_t vtxPhi = atan(vtxY/vtxX);
+   if((vtxPhi < 0)&&(vtxX < 0)) vtxPhi += TMath::Pi();
+   else if((vtxPhi > 0)&&(vtxY < 0)) vtxPhi -= TMath::Pi();
+   trk.setHitR(0, vtxR);
+   trk.setHitPhi(0, vtxPhi);
+
+   Double_t trkPhi = -1/std::tan(vtxPhi);
+   Double_t vtxZ = 0.;
+   if(trk.getHitIs(6)){
+      vtxZ = trk.getHitZ(6) - trk.getHitZ(6)/std::tan(trk.getTrackTheta());
    }
-   vX = estimateVertexX;
-   vY = estimateVertexY;
+   trk.setHitZ(0, vtxZ);
 }
 
 Double_t InttSeedTracking::EstimateRecoTheta(tracKuma trk, Int_t type){
@@ -527,7 +831,25 @@ Double_t InttSeedTracking::EstimateRecoTheta(tracKuma trk, Int_t type){
    return recoTheta;
 }
 
+void InttSeedTracking::ParticleIdentify(tracKuma trk){
+   Double_t tempInttPhi = 0.;
+   if(trk.getHitIs(4)) tempInttPhi = trk.getHitPhi(4);
+   else tempInttPhi = trk.getHitPhi(5);
+   Double_t tempCalPhi = trk.getHitPhi(6);
+   
+   if(tempInttPhi < 0) tempInttPhi += 2*TMath::Pi();
+   if(tempCalPhi < 0)  tempCalPhi += 2*TMath::Pi();
 
+   Int_t charge = (tempCalPhi - tempCalPhi)/std::abs(tempCalPhi - tempCalPhi);
+
+   trk.setTrackCharge(charge);
+
+   bool tempElectronIs = false;
+   // ChecKumaDaYo!!! You need to optimize the threshold to identify electron
+   if(trk.getTrackE()/trk.getTrackP() > m_EOverPElectron) tempElectronIs = true;
+   trk.setTrackElectronIs(tempElectronIs);
+
+}
 
 bool InttSeedTracking::ReturnHitsRPhiVect(std::vector<Double_t >& hitR, std::vector<Double_t >& hitPhi,\
    std::vector<Int_t > subDetSet, tracKuma trk){
@@ -544,11 +866,16 @@ bool InttSeedTracking::ReturnHitsRPhiVect(std::vector<Double_t >& hitR, std::vec
 }
 
 
+void InttSeedTracking::SetHitParaInTrack(tracKuma& trk, Int_t detId, hitStruct hitSt){
+   trk.setHitIs(detId, true);
+   trk.setHitR(detId, hitSt.r);
+   trk.setHitZ(detId, hitSt.z);
+   trk.setHitPhi(detId, hitSt.phi);
+   Double_t hitTheta = 2*atan(std::exp(-hitSt.eta));
+   trk.setHitTheta(detId, hitTheta);
+}
+
 #endif // #ifdef InttSeedTracking_cxx
-
-
-
-
 
 
 

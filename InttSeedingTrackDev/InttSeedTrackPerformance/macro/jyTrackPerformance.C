@@ -1,8 +1,8 @@
-#include "../src/JYInttSeedTrackPerformance.h"
-#include "../src/JYInttSeedTrackPerformance.cxx"
+#include "../src/InttSeedTrackPerformance.h"
+#include "../src/InttSeedTrackPerformance.cxx"
 
-#include "../src/JYInttSeedTracking.h"
-#include "../src/JYInttSeedTracking.cxx"
+#include "../src/InttSeedTracking.h"
+#include "../src/InttSeedTracking.cxx"
 #include "../src/SPHTracKuma.h"
 
 #include <typeinfo>
@@ -10,16 +10,16 @@
 void jyTrackPerformance(Int_t runNum=0)
 {
     // work area
-    // std::string fDir = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ParticleGen/output";
-    std::string fDir = "/sphenix/user/jzhang1/INTT-EMCAL/InttSeedingTrackDev/InttSeedTrackPerformance/output";
+    std::string fDir = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ParticleGen/output";
+    // std::string fDir = "/sphenix/user/jzhang1/INTT-EMCAL/InttSeedingTrackDev/InttSeedTrackPerformance/output";
 
     // input file
     TChain *tc = new TChain("tree");  
-    std::string fInputName = fDir + "/singleE3500to4500MeVEta0.root";
+    std::string fInputName = fDir + "/singleE1500to2500MeVEta0.root";
     tc->Add(fInputName.c_str()); 
 
     // output file
-    std::string fOutputName = fDir+"/trackingWInttCalClu1500to2500MeVEtaWide_v2"; 
+    std::string fOutputName = fDir+"/trackingWInttCalClu1500to2500MeVEtaWide_v3"; 
 
     TTree *tt = (TTree*)tc;
     InttSeedTrackPerformance *h = new InttSeedTrackPerformance(tt, fInputName, fOutputName, runNum);

@@ -26,7 +26,7 @@
 #include "TArc.h"
 
 #include "SPHTracKuma.h"
-#include "JYInttSeedTracking.h"
+#include "InttSeedTracking.h"
 
 // Header file for the classes stored in the TTree if any.
 #include <vector>
@@ -158,35 +158,39 @@ public :
    Int_t qaEvent = 1;
    Int_t pubEvNum = 0;
 
+   bool m_bDecayEvent = false;
+
    std::vector<Int_t> m_vTargetEvents;
 
    std::vector<tracKuma> m_tracks;
 
-   std::vector<hitStruct> m_TruthParticle;
+   std::vector<hitStruct > m_TruthParticle;
 
-   std::vector<hitStruct> m_fMvtxHits;
-   std::vector<hitStruct> m_sMvtxHits;
-   std::vector<hitStruct> m_tMvtxHits;
+   std::vector<hitStruct > m_fMvtxHits;
+   std::vector<hitStruct > m_sMvtxHits;
+   std::vector<hitStruct > m_tMvtxHits;
 
-   std::vector<hitStruct> m_iInttHits;
-   std::vector<hitStruct> m_oInttHits;
+   std::vector<hitStruct > m_iInttHits;
+   std::vector<hitStruct > m_oInttHits;
 
-   std::vector<hitStruct> m_TpcHits;
+   std::vector<hitStruct > m_TpcHits;
 
-   std::vector<hitStruct> m_emcalHits;
-   std::vector<hitStruct> m_iHCalHits;
-   std::vector<hitStruct> m_oHCalHits;
+   std::vector<hitStruct > m_emcalHits;
+   std::vector<hitStruct > m_iHCalHits;
+   std::vector<hitStruct > m_oHCalHits;
 
-   std::vector<std::vector<hitStruct>> m_vTruthParticle;
+   std::vector<std::vector<hitStruct > > m_vTruthParticle;
 
-   std::vector<std::vector<hitStruct>> m_viInttHits;
-   std::vector<std::vector<hitStruct>> m_voInttHits;
+   std::vector<std::vector<hitStruct > > m_viInttHits;
+   std::vector<std::vector<hitStruct > > m_voInttHits;
 
-   std::vector<std::vector<hitStruct>> m_vTpcHits;
+   std::vector<std::vector<hitStruct > > m_vTpcHits;
 
-   std::vector<std::vector<hitStruct>> m_vemcalHits;
-   std::vector<std::vector<hitStruct>> m_viHCalHits;
-   std::vector<std::vector<hitStruct>> m_voHCalHits;
+   std::vector<std::vector<hitStruct > > m_vemcalHits;
+   std::vector<std::vector<hitStruct > > m_viHCalHits;
+   std::vector<std::vector<hitStruct > > m_voHCalHits;
+   
+
 
    TH2D* m_HINTTHitMap;
    TH2D* m_HGlobalHitMap;
@@ -210,10 +214,23 @@ public :
    TH3D* m_HTruthPtVsSagittaPt_MvtxInttEmcal;
    TH3D* m_HTruthPtVsSagittaPt_VtxMvtxInttEmcal;
 
-   TH3D* m_HTruthPtVsFitFuncPt;
+   TH3D* m_HTruthPtVsFitFuncPt_IInttOInttEmcal;
+
+   TH3D* m_HTruthPtVsFitFuncPt_VtxIInttEmcal;
+   TH3D* m_HTruthPtVsFitFuncPt_VtxOInttEmcal;
+   TH3D* m_HTruthPtVsFitFuncPt_VtxInttEmcal;
+
+   TH3D* m_HTruthPtVsFitFuncPt_MvtxIInttEmcal;
+   TH3D* m_HTruthPtVsFitFuncPt_MvtxOInttEmcal;
+   TH3D* m_HTruthPtVsFitFuncPt_MvtxInttEmcal;
+
+   TH2D* m_HTruthPVsRecoP_InttEmcal;
+   TH2D* m_HTruthPVsRecoP_MvtxInttEmcal;
+   TH2D* m_HTruthPVsRecoP_FitFunc;
 
    TH2D* m_HTruthPVsEOverP_InttEmcal;
    TH2D* m_HTruthPVsEOverP_MvtxInttEmcal;
+   TH2D* m_HTruthPVsEOverP_FitFunc;
 
    TH2D* m_HTruthPVsTheta_InttEmcal;
    TH2D* m_HTruthPVsTheta_MvtxInttEmcal;
@@ -229,6 +246,8 @@ public :
 
    TH1D* m_dVtxZ_InttEmcal;
    TH1D* m_dVtxZ_MvtxInttEmcal;
+
+   TH3D* m_HDE;
 
 
    TH3D* m_HDPhiVsDStraightVsTruPt;
@@ -249,6 +268,9 @@ public :
    TH3D* m_HDLVsTruthPtVsEta_OInttEmcal;
    TH1D* m_HDL1D_OInttEmcal;
 
+
+   TH3D* m_HDPhiVsTruthPtVsEta_IInttOInttEmcal;
+
    TH3D* m_HDPhiVsTruthPtVsEta_VtxIIntt;
    TH3D* m_HDPhiVsTruthPtVsEta_IInttOIntt;
    TH3D* m_HDPhiVsTruthPtVsEta_OInttEmcal;
@@ -257,9 +279,11 @@ public :
    TH3D* m_HDPhiVsTruthPtVsEta_VtxOInttEmcal;
    TH3D* m_HDPhiVsTruthPtVsEta_VtxInttEmcal;
 
-   TH3D* m_HDPhiVsTruthPtVsEta_MVtxIInttEmcal;
-   TH3D* m_HDPhiVsTruthPtVsEta_MVtxOInttEmcal;
-   TH3D* m_HDPhiVsTruthPtVsEta_MVtxInttEmcal;
+   TH3D* m_HDPhiVsTruthPtVsEta_MvtxIInttEmcal;
+   TH3D* m_HDPhiVsTruthPtVsEta_MvtxOInttEmcal;
+   TH3D* m_HDPhiVsTruthPtVsEta_MvtxInttEmcal;
+
+   TProfile* m_HDPhiVsTruthPtProf_IInttOInttEmcal;
 
    TProfile* m_HDPhiVsTruthPtProf_VtxIIntt;
    TProfile* m_HDPhiVsTruthPtProf_IInttOIntt;
@@ -269,9 +293,12 @@ public :
    TProfile* m_HDPhiVsTruthPtProf_VtxOInttEmcal;
    TProfile* m_HDPhiVsTruthPtProf_VtxInttEmcal;
 
-   TProfile* m_HDPhiVsTruthPtProf_MVtxIInttEmcal;
-   TProfile* m_HDPhiVsTruthPtProf_MVtxOInttEmcal;
-   TProfile* m_HDPhiVsTruthPtProf_MVtxInttEmcal;
+   TProfile* m_HDPhiVsTruthPtProf_MvtxIInttEmcal;
+   TProfile* m_HDPhiVsTruthPtProf_MvtxOInttEmcal;
+   TProfile* m_HDPhiVsTruthPtProf_MvtxInttEmcal;
+
+   TH1D* m_HPtEfficiency;
+   TH1D* m_HTruTrackNum;
 
    // == member functions == 
    void HistInit();
@@ -291,18 +318,21 @@ public :
 
 
    // Track Performance QA functions =======================================
-   void TrackQA(std::vector<hitStruct > vTruthPs, std::vector<hitStruct > vEmcalHits,\
-   std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHcalHits);
+   Int_t TruRecoMatching(hitStruct truthP, std::vector<tracKuma > vRecoTrk,\
+   std::vector<Int_t > vMatchiedRecoTrkId);
+
+   void TrackQA(std::vector<hitStruct > vTruthPs, std::vector<hitStruct > vEmcalHits);
    
    Int_t TruRecoMatching(hitStruct truthP);
 
    void DeltaPtPerform(hitStruct truthP, tracKuma trk);
    void TrackOtherPropertiesWTruth(hitStruct truthP, tracKuma trk,\
    Double_t sagittaR, Double_t centerX, Double_t centerY, Double_t recoPt,\
-   TH2D* hTruthPVsTheta, TH2D* hTruthPVsPhi, TH2D* hTruthPVsEOverP,\
+   TH2D* hTruthPVsTheta, TH2D* hTruthPVsPhi, TH2D* hTruthPVsRecoP, TH2D* hTruthPVsEOverP,\
    TH2D* hDVtxXY, TH1D* hDVtxR, TH1D* hDVtxZ);
 
    void CaloEnergyQA(Int_t CalId, std::vector<hitStruct > calHits);
+   bool ParticleDecayCheck(tracKuma trk, std::vector<hitStruct > vEmcalHits);
 
    void EstimateMagneticShift(hitStruct truthP, tracKuma trk);
    // Track Performance QA functions =======================================
@@ -323,9 +353,11 @@ public :
    // Kuma Members ======
 
 
+
 };
 
 
 
 #endif
+
 

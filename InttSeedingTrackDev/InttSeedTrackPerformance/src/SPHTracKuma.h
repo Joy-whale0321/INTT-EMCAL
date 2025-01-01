@@ -7,31 +7,30 @@
 #include <Rtypes.h>
 class tracKuma
 {
-    public:
+  public:
     tracKuma() :
-      m_particleType(0),
+      m_electronIs(false),
+      m_charge(0),
       m_phi(0),
       m_theta(0),
       m_energy(0),
+      m_p(0),
       m_pt(0),
       m_saggitaR(0),
       m_saggitaX(0),
       m_saggitaY(0),
       m_refPhi(0)
-    {
-        // 0: vertex, 1-3: MVTX, 4-5: INTT, 6: Cal
-        for(unsigned int layId = 0; layId < 7; layId++)
-        {
-            m_hitIs[layId] = false;
-            m_hitR[layId] = 0.;
-            m_hitZ[layId] = 0.;
-            m_hitPhi[layId] = 0.;
-            m_hitTheta[layId] = 0.;
-        }
-    };
-
-    ~tracKuma() {};
-    
+  {
+    // 0: vertex, 1-3: MVTX, 4-5: INTT, 6: Cal
+    for(unsigned int layId = 0; layId < 7; layId++){
+      m_hitIs[layId] = false;
+      m_hitR[layId] = 0.;
+      m_hitZ[layId] = 0.;
+      m_hitPhi[layId] = 0.;
+      m_hitTheta[layId] = 0.;
+    }
+  };
+  ~tracKuma() {};
     void setHitIs(Int_t layId, Bool_t is)
     {
         m_hitIs[layId] = is;
@@ -53,9 +52,13 @@ class tracKuma
         m_hitTheta[layId] = theta;
     }
 
-    void setTrackParticleType(Int_t pType)
+    void setTrackElectronIs(bool electronIs)
     {
-        m_particleType = pType;
+        m_electronIs = electronIs;
+    }
+    void setTrackCharge(Int_t pCharge)
+    {
+        m_charge = pCharge;
     }
     void setTrackPhi(Double_t phi)
     {
@@ -68,6 +71,10 @@ class tracKuma
     void setTrackE(Double_t energy)
     {
         m_energy = energy;
+    }
+    void setTrackP(Double_t p)
+    {
+        m_p = p;
     }
     void setTrackPt(Double_t pt)
     {
@@ -107,8 +114,11 @@ class tracKuma
         return m_hitTheta[layId];
     }
     
-    Int_t getTrackParticleType(){
-        return m_particleType;
+    bool getTrackElectronIs(){
+        return m_electronIs;
+    }
+    Int_t getTrackCharge(){
+        return m_charge;
     }
     Double_t getTrackPhi(){
         return m_phi;
@@ -121,6 +131,9 @@ class tracKuma
     }
     Double_t getTrackPt(){
         return m_pt;
+    }
+    Double_t getTrackP(){
+        return m_p;
     }
     Double_t getTrackSagR(){
         return m_saggitaR;
@@ -141,10 +154,12 @@ private:
     Double_t m_hitZ[7];
     Double_t m_hitPhi[7];
     Double_t m_hitTheta[7];
-    Int_t    m_particleType;
+    bool     m_electronIs;
+    Int_t    m_charge;
     Double_t m_phi;
     Double_t m_theta;
     Double_t m_energy;
+    Double_t m_p;
     Double_t m_pt;
     Double_t m_saggitaR;
     Double_t m_saggitaX;
@@ -152,9 +167,8 @@ private:
     Double_t m_refPhi;
 };	
 
-struct hitStruct
-{
-	Double_t r;
+struct hitStruct{
+    Double_t r;
     Double_t z;
 	Double_t phi;
     Double_t eta;

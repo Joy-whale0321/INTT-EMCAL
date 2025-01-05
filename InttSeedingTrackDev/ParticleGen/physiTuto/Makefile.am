@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreig
+AUTOMAKE_OPTIONS = foreign
 
 AM_CPPFLAGS = \
   -I$(includedir) \

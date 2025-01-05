@@ -148,6 +148,13 @@ int tutorial::Init(PHCompositeNode *topNode)
     PrimaryG4P_Charge_.clear();
     PrimaryG4P_isChargeHadron_.clear();
 
+    _CEMC_Hit_Evis.clear();
+    _CEMC_Hit_Edep.clear();
+    _CEMC_Hit_ch.clear();
+    _CEMC_Hit_x.clear();
+    _CEMC_Hit_y.clear();
+    _CEMC_Hit_z.clear();
+
     ////////////////////////////////////////////////////////
     // Initialization of the member                       //
     ////////////////////////////////////////////////////////
@@ -207,6 +214,15 @@ int tutorial::Init(PHCompositeNode *topNode)
     tree_out->Branch("PrimaryG4P_E", &PrimaryG4P_E_);
     tree_out->Branch("PrimaryG4P_PID", &PrimaryG4P_PID_);
     tree_out->Branch("PrimaryG4P_isChargeHadron", &PrimaryG4P_isChargeHadron_);
+
+    // truthinfo G4hit info
+    tree_out->Branch("CEMC_Hit_Evis", &_CEMC_Hit_Evis);
+    tree_out->Branch("CEMC_Hit_Edep", &_CEMC_Hit_Edep);
+    tree_out->Branch("CEMC_Hit_ch", &_CEMC_Hit_ch); 
+    tree_out->Branch("CEMC_Hit_x", &_CEMC_Hit_x);
+    tree_out->Branch("CEMC_Hit_y", &_CEMC_Hit_y);
+    tree_out->Branch("CEMC_Hit_z", &_CEMC_Hit_z);
+    
 
     return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -511,8 +527,8 @@ int tutorial::prepareiHCal(PHCompositeNode * topNode) {
     }
 
     return Fun4AllReturnCodes::EVENT_OK;
-
 }
+
 int tutorial::prepareoHCal(PHCompositeNode * topNode) {
     //     HCALOUT (PHCompositeNode)/
     //        G4HIT_ABSORBER_HCALOUT (IO,PHG4HitContainer)
@@ -745,7 +761,39 @@ int tutorial::prepareG4Turth(PHCompositeNode * topNode){
     NPrimaryG4P_promptChargeHadron_ = tmpv_chargehadron.size();
 
     return Fun4AllReturnCodes::EVENT_OK;
+}
 
+
+// -------------------------------------------------------------------------------------------------------------------------- 
+int tutorial::prepareG4HIT(PHCompositeNode * topNode)
+{
+    hits_CEMC = findNode::getClass<PHG4HitContainer>(topNode, "G4HIT_CEMC");
+    if(!hits_CEMC)
+    {
+      std::cout << "PhotonEMC::process_event: G4HIT_CEMC not found!!!" << std::endl;
+    }
+
+    PHG4HitContainer::ConstRange hit_range = hits_CEMC->getHits();
+    for (PHG4HitContainer::ConstIterator hit_iter = hit_range.first; hit_iter != hit_range.second; hit_iter++)
+    {
+        PHG4Hit *this_hit = hit_iter->second;
+        float light_yield = hit_iter->second->get_light_yield();
+        float edep = hit_iter->second->get_edep();
+        int ch = hit_iter->second->get_layer();
+        float x = hit_iter->second->get_x(0);
+        float y = hit_iter->second->get_y(0);
+        float z = hit_iter->second->get_z(0);
+
+        // add trkid to a set
+        _CEMC_Hit_Evis.push_back(light_yield);
+        _CEMC_Hit_Edep.push_back(edep);
+        _CEMC_Hit_ch.push_back(ch);
+        _CEMC_Hit_x.push_back(x);
+        _CEMC_Hit_y.push_back(y);
+        _CEMC_Hit_z.push_back(z);
+    }
+
+    return Fun4AllReturnCodes::EVENT_OK;
 }
 
 //____________________________________________________________________________..
@@ -760,10 +808,9 @@ int tutorial::process_event(PHCompositeNode * topNode) {
     prepareoHCalClus(topNode);
     
     prepareG4Turth(topNode);
-
+    prepareG4HIT(topNode);
 
     nTowers = tower_system.size();
-    
     
     tree_out -> Fill();
 
@@ -800,7 +847,6 @@ int tutorial::ResetEvent(PHCompositeNode *topNode)
     tower_Phi_bin.clear();
     tower_edep.clear();
 
-
     nCaloClus = 0;
     caloClus_system.clear();
     caloClus_X.clear();
@@ -827,6 +873,13 @@ int tutorial::ResetEvent(PHCompositeNode *topNode)
     PrimaryG4P_isStable_.clear();
     PrimaryG4P_Charge_.clear();
     PrimaryG4P_isChargeHadron_.clear();
+
+    _CEMC_Hit_Evis.clear();
+    _CEMC_Hit_Edep.clear();
+    _CEMC_Hit_ch.clear();
+    _CEMC_Hit_x.clear();
+    _CEMC_Hit_y.clear();
+    _CEMC_Hit_z.clear();
 
 
     eventID += 1;

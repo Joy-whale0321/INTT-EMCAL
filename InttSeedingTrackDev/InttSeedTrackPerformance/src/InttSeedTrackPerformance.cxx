@@ -347,114 +347,125 @@ void InttSeedTrackPerformance::CheckPrimP(std::vector<hitStruct >& vTruthParticl
 }
 
 void InttSeedTrackPerformance::ReadInttHitting(std::vector<hitStruct >& vFMvtxHits,\
-   std::vector<hitStruct >& vSMvtxHits, std::vector<hitStruct >& vTMvtxHits,\
-   std::vector<hitStruct >& vIInttHits, std::vector<hitStruct >& vOInttHits,\
-   std::vector<hitStruct >& vTpcHits){
-   Int_t numOfClu = trk_system->size();
-   if(numOfClu == 0) return;
+    std::vector<hitStruct >& vSMvtxHits, std::vector<hitStruct >& vTMvtxHits,\
+    std::vector<hitStruct >& vIInttHits, std::vector<hitStruct >& vOInttHits,\
+    std::vector<hitStruct >& vTpcHits)
+{
+    Int_t numOfClu = trk_system->size();
+    if(numOfClu == 0) return;
 
-   for(Int_t iClu = 0; iClu < numOfClu; iClu++){
-      Int_t CluSysId = trk_system->at(iClu);
-      Int_t CluLayId = trk_layer->at(iClu);
+    for(Int_t iClu = 0; iClu < numOfClu; iClu++)
+    {
+        Int_t CluSysId = trk_system->at(iClu);
+        Int_t CluLayId = trk_layer->at(iClu);
 
-      // if(CluSysId != 1) continue;
+        // if(CluSysId != 1) continue;
 
-      Double_t CluX = trk_X->at(iClu);
-      Double_t CluY = trk_Y->at(iClu);
-      Double_t CluZ = trk_Z->at(iClu);
+        Double_t CluX = trk_X->at(iClu);
+        Double_t CluY = trk_Y->at(iClu);
+        Double_t CluZ = trk_Z->at(iClu);
 
-      Double_t CluR = sqrt(CluX*CluX + CluY*CluY);
-      Double_t CluPhi = std::atan(CluY/CluX); // -pi/2 to pi/2
-      if((CluPhi < 0)&&(CluX < 0)) CluPhi += TMath::Pi();
-      else if((CluPhi > 0)&&(CluX < 0)) CluPhi -= TMath::Pi();
+        Double_t CluR = sqrt(CluX*CluX + CluY*CluY);
+        Double_t CluPhi = std::atan(CluY/CluX); // -pi/2 to pi/2
+        if((CluPhi < 0)&&(CluX < 0)) CluPhi += TMath::Pi();
+        else if((CluPhi > 0)&&(CluX < 0)) CluPhi -= TMath::Pi();
 
-      Double_t CluTheta = std::atan(CluR/CluZ);// -pi - pi
-      Double_t CluEta = (CluZ/std::abs(CluZ)) * (- log(std::abs(std::tan(CluTheta/2))));
+        Double_t CluTheta = std::atan(CluR/CluZ);// -pi - pi
+        Double_t CluEta = (CluZ/std::abs(CluZ)) * (- log(std::abs(std::tan(CluTheta/2))));
 
-      CluX = CluR*std::cos(CluPhi);
-      CluY = CluR*std::sin(CluPhi);
-      m_HINTTHitMap->Fill(CluX, CluY);
+        CluX = CluR*std::cos(CluPhi);
+        CluY = CluR*std::sin(CluPhi);
+        m_HINTTHitMap->Fill(CluX, CluY);
 
-      hitStruct cluHit;
-      cluHit.r = CluR;
-      cluHit.z = CluZ;
-      cluHit.phi = CluPhi;
-      cluHit.eta = CluEta;
+        hitStruct cluHit;
+        cluHit.r = CluR;
+        cluHit.z = CluZ;
+        cluHit.phi = CluPhi;
+        cluHit.eta = CluEta;
 
-      if(CluSysId == 0){
-         if(CluLayId == 0) vFMvtxHits.push_back(cluHit);
-         else if(CluLayId == 1) vSMvtxHits.push_back(cluHit);
-         else if(CluLayId == 2) vTMvtxHits.push_back(cluHit);
-      }else if(CluSysId == 1){
-         if((CluLayId == 3) || (CluLayId == 4)) vIInttHits.push_back(cluHit);
-         else if((CluLayId == 5) || (CluLayId == 6)) vOInttHits.push_back(cluHit);
-      }else vTpcHits.push_back(cluHit);
-
-   }
+        if(CluSysId == 0) // mvtx
+        {
+            if(CluLayId == 0) vFMvtxHits.push_back(cluHit);
+            else if(CluLayId == 1) vSMvtxHits.push_back(cluHit);
+            else if(CluLayId == 2) vTMvtxHits.push_back(cluHit);
+        }
+        else if(CluSysId == 1) // intt
+        {
+            if((CluLayId == 3) || (CluLayId == 4)) vIInttHits.push_back(cluHit);
+            else if((CluLayId == 5) || (CluLayId == 6)) vOInttHits.push_back(cluHit);
+        }
+        else vTpcHits.push_back(cluHit); // tpc
+    }
 }
 
+// calo tower
 void InttSeedTrackPerformance::ReadCalHitting(std::vector<hitStruct >& vEmcalHits,\
-   std::vector<hitStruct >& vIHCalHits, std::vector<hitStruct >& vOHcalHits){
-   Int_t numOfCalTower = tower_Phi->size();
-   if(numOfCalTower == 0) return;
+    std::vector<hitStruct >& vIHCalHits, std::vector<hitStruct >& vOHcalHits)
+{
+    Int_t numOfCalTower = tower_Phi->size();
+    if(numOfCalTower == 0) return;
 
-   for(Int_t iCalTower = 0; iCalTower < numOfCalTower; iCalTower++){
-      Int_t calId = tower_system->at(iCalTower);
+    for(Int_t iCalTower = 0; iCalTower < numOfCalTower; iCalTower++)
+    {
+        Int_t calId = tower_system->at(iCalTower);
 
-      Double_t caloX = tower_X->at(iCalTower);
-      Double_t caloY = tower_Y->at(iCalTower);
-      Double_t caloZ = tower_Z->at(iCalTower);
-      Double_t caloPhi = tower_Phi->at(iCalTower);
+        Double_t caloX = tower_X->at(iCalTower);
+        Double_t caloY = tower_Y->at(iCalTower);
+        Double_t caloZ = tower_Z->at(iCalTower);
+        Double_t caloPhi = tower_Phi->at(iCalTower);
 
-      Double_t caloEta = tower_Eta->at(iCalTower);
-      Double_t caloE = tower_edep->at(iCalTower);
+        Double_t caloEta = tower_Eta->at(iCalTower);
+        Double_t caloE = tower_edep->at(iCalTower);
 
-      hitStruct caloHit;
-      caloHit.r = std::sqrt(caloX*caloX + caloY*caloY);
-      caloHit.z = caloZ;
-      caloHit.phi = caloPhi;
-      caloHit.eta = caloEta;
-      caloHit.energy = caloE;
+        hitStruct caloHit;
+        caloHit.r = std::sqrt(caloX*caloX + caloY*caloY);
+        caloHit.z = caloZ;
+        caloHit.phi = caloPhi;
+        caloHit.eta = caloEta;
+        caloHit.energy = caloE;
 
-      if(calId == 0) vEmcalHits.push_back(caloHit);
-      else if(calId == 1) vIHCalHits.push_back(caloHit);
-      else if(calId == 2) vOHcalHits.push_back(caloHit);
-      
-      // if(caloE > 0.1){
-      //    std::cout << "calE = " << caloE << ", bin(phi, eta) = " << tower_Phi_bin->at(iCalTower) << ", " << tower_Eta_bin->at(iCalTower) << std::endl;
-      // }
-   }
+        if(calId == 0) vEmcalHits.push_back(caloHit);
+        else if(calId == 1) vIHCalHits.push_back(caloHit);
+        else if(calId == 2) vOHcalHits.push_back(caloHit);
+
+        // if(caloE > 0.1){
+        //    std::cout << "calE = " << caloE << ", bin(phi, eta) = " << tower_Phi_bin->at(iCalTower) << ", " << tower_Eta_bin->at(iCalTower) << std::endl;
+        // }
+    }
 }
 
-void InttSeedTrackPerformance::ReadCalCluHitting(std::vector<hitStruct >& vEmcalHits,\
-   std::vector<hitStruct >& vIHCalHits, std::vector<hitStruct >& vOHcalHits){
-   Int_t numOfCaloCluster = caloClus_Phi->size();
-   if(numOfCaloCluster == 0) return;
+// calo cluster
+void InttSeedTrackPerformance::ReadCalCluHitting(std::vector<hitStruct>& vEmcalHits,\
+    std::vector<hitStruct>& vIHCalHits, std::vector<hitStruct>& vOHcalHits)
+{
+    Int_t numOfCaloCluster = caloClus_Phi->size();
+    if(numOfCaloCluster == 0) return;
 
-   for(Int_t iCaloCluster = 0; iCaloCluster < numOfCaloCluster; iCaloCluster++){
-      Int_t calId = caloClus_system->at(iCaloCluster);
+    for(Int_t iCaloCluster = 0; iCaloCluster < numOfCaloCluster; iCaloCluster++)
+    {
+        Int_t calId = caloClus_system->at(iCaloCluster);
 
-      Double_t caloX = caloClus_X->at(iCaloCluster);
-      Double_t caloY = caloClus_Y->at(iCaloCluster);
-      Double_t caloZ = caloClus_Z->at(iCaloCluster);
+        Double_t caloX = caloClus_X->at(iCaloCluster);
+        Double_t caloY = caloClus_Y->at(iCaloCluster);
+        Double_t caloZ = caloClus_Z->at(iCaloCluster);
 
-      Double_t caloPhi = caloClus_Phi->at(iCaloCluster);
-      Double_t caloE = caloClus_edep->at(iCaloCluster);
+        Double_t caloPhi = caloClus_Phi->at(iCaloCluster);
+        Double_t caloE = caloClus_edep->at(iCaloCluster);
 
-      hitStruct caloHit;
-      caloHit.r = std::sqrt(caloX*caloX + caloY*caloY);
-      caloHit.z = caloZ;
-      caloHit.phi = caloPhi;
+        hitStruct caloHit;
+        caloHit.r = std::sqrt(caloX*caloX + caloY*caloY);
+        caloHit.z = caloZ;
+        caloHit.phi = caloPhi;
 
-      Double_t caloTheta = std::atan(caloHit.r/caloHit.z);
-      Double_t caloEta = (caloZ/std::abs(caloZ)) * (- log(std::abs(std::tan(caloTheta/2))));
-      caloHit.eta = caloEta;
-      caloHit.energy = caloE;
+        Double_t caloTheta = std::atan(caloHit.r/caloHit.z);
+        Double_t caloEta = (caloZ/std::abs(caloZ)) * (- log(std::abs(std::tan(caloTheta/2))));
+        caloHit.eta = caloEta;
+        caloHit.energy = caloE;
 
-      if(calId == 0) vEmcalHits.push_back(caloHit);
-      else if(calId == 1) vIHCalHits.push_back(caloHit);
-      else if(calId == 2) vOHcalHits.push_back(caloHit);
-   }
+        if(calId == 0) vEmcalHits.push_back(caloHit);
+        else if(calId == 1) vIHCalHits.push_back(caloHit);
+        else if(calId == 2) vOHcalHits.push_back(caloHit);
+    }
 }
 
 
@@ -1481,6 +1492,5 @@ void InttSeedTrackPerformance::EventJudge(Int_t eventNum, Double_t targetVal, Do
 void InttSeedTrackPerformance::ChecKuma(std::string checkNo){
     std::cout <<"CheeeeeeeeeeeeeeeeeeeeeeeeeeeeeeecKuma"<< checkNo << std::endl;
 }
-
 
 #endif // #ifdef InttSeedTrackPerformance_cxx

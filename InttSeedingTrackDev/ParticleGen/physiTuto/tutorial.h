@@ -116,6 +116,7 @@ class tutorial : public SubsysReco
     int prepareoHCalClus(PHCompositeNode * topNode);
 
     int prepareG4Turth(PHCompositeNode * topNode);
+    int prepareG4HIT(PHCompositeNode * topNode);
 
     std::string output_path;
     std::string output_rootfile_name;
@@ -148,6 +149,7 @@ class tutorial : public SubsysReco
     RawClusterContainer * oHCal_cluster_cont = nullptr;
     
     PHG4TruthInfoContainer *m_truth_info = nullptr;
+    PHG4HitContainer *hits_CEMC = nullptr;
 
     long long eventID;
 
@@ -202,6 +204,14 @@ class tutorial : public SubsysReco
     std::vector<bool> PrimaryG4P_isStable_;
     std::vector<double> PrimaryG4P_Charge_;
     std::vector<bool> PrimaryG4P_isChargeHadron_;
+
+    // note : PHG4hit information
+    std::vector<float> _CEMC_Hit_Evis;
+    std::vector<float> _CEMC_Hit_Edep;
+    std::vector<float> _CEMC_Hit_ch;
+    std::vector<float> _CEMC_Hit_x;
+    std::vector<float> _CEMC_Hit_y;
+    std::vector<float> _CEMC_Hit_z;
 
 
     int nEMCal_chan = 24576;

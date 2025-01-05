@@ -309,32 +309,36 @@ public :
    }
 
 
-   inline void Set3PointsXY(Double_t (&HitXY)[3][2], tracKuma trk, Int_t type){
-      if(type==0){
-         HitXY[0][0] = 0.;
-         HitXY[0][1] = 0.;
-         HitXY[1][0] = trk.getHitR(4)*cos(trk.getHitPhi(4));
-         HitXY[1][1] = trk.getHitR(4)*sin(trk.getHitPhi(4));
-         HitXY[2][0] = trk.getHitR(5)*cos(trk.getHitPhi(5));
-         HitXY[2][1] = trk.getHitR(5)*sin(trk.getHitPhi(5));
-
-      }else if(type==1){
-         HitXY[0][0] = trk.getHitR(4)*cos(trk.getHitPhi(4));
-         HitXY[0][1] = trk.getHitR(4)*sin(trk.getHitPhi(4));
-         HitXY[1][0] = trk.getHitR(5)*cos(trk.getHitPhi(5));
-         HitXY[1][1] = trk.getHitR(5)*sin(trk.getHitPhi(5));
-         HitXY[2][0] = trk.getHitR(6)*cos(trk.getHitPhi(6));
-         HitXY[2][1] = trk.getHitR(6)*sin(trk.getHitPhi(6));
-      }else if(type==2){
-         HitXY[0][0] = 0.;
-         HitXY[0][1] = 0.;
-         HitXY[1][0] = trk.getHitR(5)*cos(trk.getHitPhi(5));
-         HitXY[1][1] = trk.getHitR(5)*sin(trk.getHitPhi(5));
-         HitXY[2][0] = trk.getHitR(6)*cos(trk.getHitPhi(6));
-         HitXY[2][1] = trk.getHitR(6)*sin(trk.getHitPhi(6));
-      }
-
-   }
+    inline void Set3PointsXY(Double_t (&HitXY)[3][2], tracKuma trk, Int_t type)
+    {
+        if(type==0)
+        {
+            HitXY[0][0] = 0.;
+            HitXY[0][1] = 0.;
+            HitXY[1][0] = trk.getHitR(4)*cos(trk.getHitPhi(4));
+            HitXY[1][1] = trk.getHitR(4)*sin(trk.getHitPhi(4));
+            HitXY[2][0] = trk.getHitR(5)*cos(trk.getHitPhi(5));
+            HitXY[2][1] = trk.getHitR(5)*sin(trk.getHitPhi(5));
+        }
+        else if(type==1)
+        {
+            HitXY[0][0] = trk.getHitR(4)*cos(trk.getHitPhi(4));
+            HitXY[0][1] = trk.getHitR(4)*sin(trk.getHitPhi(4));
+            HitXY[1][0] = trk.getHitR(5)*cos(trk.getHitPhi(5));
+            HitXY[1][1] = trk.getHitR(5)*sin(trk.getHitPhi(5));
+            HitXY[2][0] = trk.getHitR(6)*cos(trk.getHitPhi(6));
+            HitXY[2][1] = trk.getHitR(6)*sin(trk.getHitPhi(6));
+        }
+        else if(type==2)
+        {
+            HitXY[0][0] = 0.;
+            HitXY[0][1] = 0.;
+            HitXY[1][0] = trk.getHitR(5)*cos(trk.getHitPhi(5));
+            HitXY[1][1] = trk.getHitR(5)*sin(trk.getHitPhi(5));
+            HitXY[2][0] = trk.getHitR(6)*cos(trk.getHitPhi(6));
+            HitXY[2][1] = trk.getHitR(6)*sin(trk.getHitPhi(6));
+        }
+    }
 
    inline void CalcPerpBis(Double_t& slope, Double_t& sector, 
       Double_t HitXY1[2], Double_t HitXY2[2]){
@@ -394,43 +398,47 @@ public :
       return;
    }
 
-   inline Double_t CrossCircleCircle(Double_t& xcal, Double_t& ycal,\
-      Double_t xc, Double_t yc, Double_t R, Double_t phiIntt){
+    inline Double_t CrossCircleCircle(Double_t& xcal, Double_t& ycal, Double_t xc, Double_t yc, Double_t R, Double_t phiIntt)
+    {
 
-      Double_t slope = -1*(xc/yc);
-      Double_t section = (xc*xc+yc*yc-R*R)/(2*yc);
+        Double_t slope = -1*(xc/yc);
+        Double_t section = (xc*xc+yc*yc-R*R)/(2*yc);
 
-      Double_t coeff1 = (slope*section)/(slope*slope + 1);
-      Double_t coeff2 = (section*section - m_ECalR*m_ECalR)/(slope*slope + 1);
+        Double_t coeff1 = (slope*section)/(slope*slope + 1);
+        Double_t coeff2 = (section*section - m_ECalR*m_ECalR)/(slope*slope + 1);
 
-      Double_t x1 = -1 * coeff1 + std::sqrt(coeff1*coeff1 - coeff2);
-      Double_t x2 = -1 * coeff1 - std::sqrt(coeff1*coeff1 - coeff2);
+        Double_t x1 = -1 * coeff1 + std::sqrt(coeff1*coeff1 - coeff2);
+        Double_t x2 = -1 * coeff1 - std::sqrt(coeff1*coeff1 - coeff2);
 
-      Double_t y1 = slope*x1 + section;
-      Double_t y2 = slope*x2 + section;
+        Double_t y1 = slope*x1 + section;
+        Double_t y2 = slope*x2 + section;
 
-      Double_t phi1 = std::atan(y1/x1);
-      if((phi1 < 0)&&(x1 < 0)) phi1 += TMath::Pi();
-      else if((phi1 > 0)&&(x1 < 0)) phi1 -= TMath::Pi();
+        Double_t phi1 = std::atan(y1/x1);
+        if((phi1 < 0)&&(x1 < 0)) phi1 += TMath::Pi();
+        else if((phi1 > 0)&&(x1 < 0)) phi1 -= TMath::Pi();
 
-      Double_t phi2 = std::atan(y2/x2);
-      if((phi2 < 0)&&(x2 < 0)) phi2 += TMath::Pi();
-      else if((phi2 > 0)&&(x2 < 0)) phi2 -= TMath::Pi();
+        Double_t phi2 = std::atan(y2/x2);
+        if((phi2 < 0)&&(x2 < 0)) phi2 += TMath::Pi();
+        else if((phi2 > 0)&&(x2 < 0)) phi2 -= TMath::Pi();
 
-      Double_t calPhi = 0.;
-      if((std::abs(phi1-phiIntt)) < (std::abs(phi2-phiIntt))){
-         xcal = x1;
-         ycal = y1;
-         calPhi = phi1;
-      }else{
-         xcal = x2;
-         ycal = y2;
-         calPhi = phi2;
-      }
+        Double_t calPhi = 0.;
+        if((std::abs(phi1-phiIntt)) < (std::abs(phi2-phiIntt)))
+        {
+            xcal = x1;
+            ycal = y1;
+            calPhi = phi1;
+        }
+        else
+        {
+            xcal = x2;
+            ycal = y2;
+            calPhi = phi2;
+        }
 
-      return calPhi;
-   }
-   // == e == Simple math equations  ##############################################
+        return calPhi;
+    }
+
+    // == e == Simple math equations  ##############################################
 
 private:
    Double_t m_ECalR = 93.5; //surface

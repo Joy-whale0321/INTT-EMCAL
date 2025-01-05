@@ -186,101 +186,106 @@ bool InttSeedTracking::InttSeedMatching(std::vector<tracKuma>& tracks, Int_t int
    std::vector<hitStruct >& vFMvtxHits,\
    std::vector<hitStruct >& vSMvtxHits, std::vector<hitStruct >& vTMvtxHits,\
    std::vector<hitStruct >& vIInttHits, std::vector<hitStruct > vEmcalHits,\
-   std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHCalHits){
+   std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHCalHits)
+{
+    Double_t inttTheta = 2*atan(std::exp(-baseInttHit.eta));
+    Double_t inttPhi = baseInttHit.phi;
+    Double_t inttR = baseInttHit.r;
+    
+    std::vector<tracKuma > v_tempTracks;
+    tracKuma bestTrk;
+    Int_t matchFMvtxId = 99999;
+    Int_t matchSMvtxId = 99999;
+    Int_t matchTMvtxId = 99999;
+    Int_t matchIInttId = 99999;
+    Double_t smallestChi = 9999.;
+    Int_t matchiECalID = 9999;
+    for(Int_t iECalT = 0; iECalT < vEmcalHits.size(); iECalT++)
+    {
+        Double_t ecalE = vEmcalHits.at(iECalT).energy;
+        if(ecalE < m_EcalEThre) continue; // 能量阈值的筛选，太低能量的hit不要
 
-   Double_t inttTheta = 2*atan(std::exp(-baseInttHit.eta));
-   Double_t inttPhi = baseInttHit.phi;
-   Double_t inttR = baseInttHit.r;
-   
-   std::vector<tracKuma > v_tempTracks;
-   tracKuma bestTrk;
-   Int_t matchFMvtxId = 99999;
-   Int_t matchSMvtxId = 99999;
-   Int_t matchTMvtxId = 99999;
-   Int_t matchIInttId = 99999;
-   Double_t smallestChi = 9999.;
-   Int_t matchiECalID = 9999;
-   for(Int_t iECalT = 0; iECalT < vEmcalHits.size(); iECalT++){
-      Double_t ecalE = vEmcalHits.at(iECalT).energy;
-      if(ecalE < m_EcalEThre) continue;
-      
-      Double_t ecalTheta = 2*atan(std::exp(-vEmcalHits.at(iECalT).eta));
-      // ChecKumaDaYo!!! you need to optimize the search range
-      if((inttTheta - TMath::Pi()/10 < ecalTheta)&&(ecalTheta < inttTheta + TMath::Pi()/10)){
-         Int_t minChiSqrtEMCalTrkId = 9999;
-         Double_t minChiSqrt = 9999.;
-         Double_t ecalPhi = vEmcalHits.at(iECalT).phi;
-         // ChecKumaDaYo!!! you need to optimize the search range
-         if((inttPhi - TMath::Pi()/10 < ecalPhi)&&(ecalPhi < inttPhi + TMath::Pi()/10)){
-            tracKuma tempTrack;
+        Double_t ecalTheta = 2*atan(std::exp(-vEmcalHits.at(iECalT).eta));
+        // ChecKumaDaYo!!! you need to optimize the search range
+        if((inttTheta - TMath::Pi()/10 < ecalTheta)&&(ecalTheta < inttTheta + TMath::Pi()/10)) // emcal eta match
+        {
+            Int_t minChiSqrtEMCalTrkId = 9999;
+            Double_t minChiSqrt = 9999.;
+            Double_t ecalPhi = vEmcalHits.at(iECalT).phi;
+            // ChecKumaDaYo!!! you need to optimize the search range
+            if((inttPhi - TMath::Pi()/10 < ecalPhi)&&(ecalPhi < inttPhi + TMath::Pi()/10)) // emcal phi match
+            {
+                tracKuma tempTrack;
 
-            tempTrack.setHitIs(0, true);
-            tempTrack.setHitR(0, 0.);
-            tempTrack.setHitZ(0, 0.);
-            tempTrack.setHitPhi(0, 0.);
-            tempTrack.setHitTheta(0, 0.);
+                tempTrack.setHitIs(0, true); // vertex set
+                tempTrack.setHitR(0, 0.);
+                tempTrack.setHitZ(0, 0.);
+                tempTrack.setHitPhi(0, 0.);
+                tempTrack.setHitTheta(0, 0.);
 
-            SetHitParaInTrack(tempTrack, inttId, baseInttHit); // set INTT parameters
-            SetHitParaInTrack(tempTrack, 6, vEmcalHits.at(iECalT)); // set ECal parameters
+                SetHitParaInTrack(tempTrack, inttId, baseInttHit); // set INTT parameters, inttid 4-iintt, 5-oIntt
+                SetHitParaInTrack(tempTrack, 6, vEmcalHits.at(iECalT)); // set ECal parameters
 
-            Double_t HitsXY[3][2];
-            Set3PointsXY(HitsXY, tempTrack, 2); // convert r, phi -> x, y for the three points.
-            Double_t sagittaR = 9999.;
-            Double_t cX = 0.;
-            Double_t cY = 0.;
-            // estimate the circle using three points roughly
-            RoughEstiSagittaCenter3Point(sagittaR, cX, cY, HitsXY);
-            tempTrack.setTrackSagR(sagittaR);
-            tempTrack.setTrackSagX(cX);
-            tempTrack.setTrackSagY(cY);
+                Double_t HitsXY[3][2];
+                Set3PointsXY(HitsXY, tempTrack, 2); // convert r, phi -> x, y for the three points.
+                Double_t sagittaR = 9999.;
+                Double_t cX = 0.;
+                Double_t cY = 0.;
+                // estimate the circle using three points roughly
+                RoughEstiSagittaCenter3Point(sagittaR, cX, cY, HitsXY);
+                tempTrack.setTrackSagR(sagittaR);
+                tempTrack.setTrackSagX(cX);
+                tempTrack.setTrackSagY(cY);
 
-            Int_t iInttMatchId = 9999;
-            if(inttId == 5){
-               Double_t iInttClusX = 9999.;
-               Double_t iInttClusY = 9999.;
-               Double_t iInttDRThre = 1.0;
-               // searching for the best iINTT hit satisfying dR threshold
-               // ChecKumaDaYo!!! you should optimize the dR threshold iInttDRThre
-               if(FindHitsOnCircle(iInttMatchId, iInttClusX, iInttClusY, \
-                  sagittaR, cX, cY, vIInttHits, iInttDRThre)){         
-                  SetHitParaInTrack(tempTrack, 4, vIInttHits.at(iInttMatchId));
-               }      
-            }
-            
-            // searching for the best MVTX hits satisfying dR threshold
-            // ChecKumaDaYo!!! you should optimize the dR threshold dRThre_Mvtx
-            Int_t seleFMvtxId = 99999;
-            Int_t seleSMvtxId = 99999;
-            Int_t seleTMvtxId = 99999;
-            Double_t dRThre_Mvtx = 5.;
-            AddMvtxHits(tempTrack, vFMvtxHits, vSMvtxHits, vTMvtxHits, dRThre_Mvtx,\
-               seleFMvtxId, seleSMvtxId, seleTMvtxId);
-            Double_t dRChi = EstiChiTrkOnCircle(tempTrack, cX, cY, sagittaR);
-            if(minChiSqrt > dRChi){
-               minChiSqrt = dRChi;
-               bestTrk = tempTrack;
-               matchFMvtxId = seleFMvtxId;
-               matchSMvtxId = seleSMvtxId;
-               matchTMvtxId = seleTMvtxId;
-               matchIInttId = iInttMatchId;
-            }
-         }// == e == Ecal Phi range if
-      }// == e == Ecal Theta range if
-   }// == e == Ecal Loop
-   
-   // Judge the reconstructed track is available or not.
-   // The requirements: 
-   // (1) It has both iINTT and oINTT hits
-   // (2) Single INTT and two MVTX hits
-   if(!CheckTrkRequirements(bestTrk)) return false;
-   RefindCalHit(bestTrk, vEmcalHits, vIHCalHits, vOHCalHits);
-   tracks.push_back(bestTrk);
-   if(matchFMvtxId!=99999) vFMvtxHits.erase(vFMvtxHits.begin() + matchFMvtxId);
-   if(matchSMvtxId!=99999) vSMvtxHits.erase(vSMvtxHits.begin() + matchSMvtxId);
-   if(matchTMvtxId!=99999) vTMvtxHits.erase(vTMvtxHits.begin() + matchTMvtxId);
-   if((inttId == 5)&&(matchIInttId!=9999)) vIInttHits.erase(vIInttHits.begin() + matchIInttId);
+                // 先match emcal，再match iintt吗？
+                Int_t iInttMatchId = 9999;
+                if(inttId == 5)
+                {
+                    Double_t iInttClusX = 9999.;
+                    Double_t iInttClusY = 9999.;
+                    Double_t iInttDRThre = 1.0;
+                    // searching for the best iINTT hit satisfying dR threshold
+                    // ChecKumaDaYo!!! you should optimize the dR threshold iInttDRThre
+                    if(FindHitsOnCircle(iInttMatchId, iInttClusX, iInttClusY, sagittaR, cX, cY, vIInttHits, iInttDRThre))
+                    {         
+                        SetHitParaInTrack(tempTrack, 4, vIInttHits.at(iInttMatchId));
+                    }      
+                }
 
-   return true;
+                // searching for the best MVTX hits satisfying dR threshold
+                // ChecKumaDaYo!!! you should optimize the dR threshold dRThre_Mvtx
+                Int_t seleFMvtxId = 99999;
+                Int_t seleSMvtxId = 99999;
+                Int_t seleTMvtxId = 99999;
+                Double_t dRThre_Mvtx = 5.;
+                AddMvtxHits(tempTrack, vFMvtxHits, vSMvtxHits, vTMvtxHits, dRThre_Mvtx, seleFMvtxId, seleSMvtxId, seleTMvtxId);
+                Double_t dRChi = EstiChiTrkOnCircle(tempTrack, cX, cY, sagittaR);
+                if(minChiSqrt > dRChi)
+                {
+                    minChiSqrt = dRChi;
+                    bestTrk = tempTrack;
+                    matchFMvtxId = seleFMvtxId;
+                    matchSMvtxId = seleSMvtxId;
+                    matchTMvtxId = seleTMvtxId;
+                    matchIInttId = iInttMatchId;
+                }
+            }// == e == Ecal Phi range if
+        }// == e == Ecal Theta range if
+    }// == e == Ecal Loop
+    
+    // Judge the reconstructed track is available or not.
+    // The requirements: 
+    // (1) It has both iINTT and oINTT hits
+    // (2) Single INTT and two MVTX hits
+    if(!CheckTrkRequirements(bestTrk)) return false;
+    RefindCalHit(bestTrk, vEmcalHits, vIHCalHits, vOHCalHits);
+    tracks.push_back(bestTrk);
+    if(matchFMvtxId!=99999) vFMvtxHits.erase(vFMvtxHits.begin() + matchFMvtxId);
+    if(matchSMvtxId!=99999) vSMvtxHits.erase(vSMvtxHits.begin() + matchSMvtxId);
+    if(matchTMvtxId!=99999) vTMvtxHits.erase(vTMvtxHits.begin() + matchTMvtxId);
+    if((inttId == 5)&&(matchIInttId!=9999)) vIInttHits.erase(vIInttHits.begin() + matchIInttId);
+
+    return true;
 }
 
 
@@ -301,75 +306,82 @@ Double_t InttSeedTracking::EstiChiTrkOnCircle(tracKuma trk,\
    return chi;
 }
 
-bool InttSeedTracking::CheckTrkRequirements(tracKuma trk){
-   if(trk.getHitIs(4)) return true;
-   Int_t numMvtx = 0;
-   for(Int_t iMvtx = 1; iMvtx < 4; iMvtx++) if(trk.getHitIs(iMvtx)) numMvtx += 1;
+// ointt + emcal + iintt/mvtx 3points
+bool InttSeedTracking::CheckTrkRequirements(tracKuma trk)
+{
+    if(trk.getHitIs(4)) return true; // iintt
+    Int_t numMvtx = 0;
+    for(Int_t iMvtx = 1; iMvtx < 4; iMvtx++) if(trk.getHitIs(iMvtx)) numMvtx += 1; // mvtx
 
-   if(numMvtx > 1) return true;
-   else return false; 
+    if(numMvtx > 1) return true;
+    else return false; 
 }
 
-void InttSeedTracking::RefindCalHit(tracKuma trk, std::vector<hitStruct > vEmcalHits,\
-   std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHcalHits){
-   std::vector<Int_t > subDetIds = {1, 2, 3, 4, 5};
-   std::vector<Double_t > vHitR = {};
-   std::vector<Double_t > vHitsPhi = {};
-   if(!ReturnHitsRPhiVect(vHitR, vHitsPhi, subDetIds, trk)) return;
-   Double_t cX = 0.;
-   Double_t cY = 0.;
-   Double_t sagittaR = 0.;
-   Double_t tempHitIInttPhi = trk.getHitPhi(4);
-   Double_t tempHitEmcalPhi = trk.getHitPhi(6);
-   // ChecKumaDaYo!!! it does not work in only sPHENIX server?????
-   // SagittaRByCircleFit(cX, cY, sagittaR, vHitR, vHitsPhi, trk.getHitPhi(4), trk.getHitPhi(6));
+void InttSeedTracking::RefindCalHit(tracKuma trk, std::vector<hitStruct> vEmcalHits, std::vector<hitStruct> vIHCalHits, std::vector<hitStruct> vOHcalHits)
+{
+    std::vector<Int_t> subDetIds = {1, 2, 3, 4, 5};
+    std::vector<Double_t> vHitR = {};
+    std::vector<Double_t> vHitsPhi = {};
+    if(!ReturnHitsRPhiVect(vHitR, vHitsPhi, subDetIds, trk)) return;
+    Double_t cX = 0.;
+    Double_t cY = 0.;
+    Double_t sagittaR = 0.;
+    Double_t tempHitIInttPhi = trk.getHitPhi(4);
+    Double_t tempHitEmcalPhi = trk.getHitPhi(6);
+    // ChecKumaDaYo!!! it does not work in only sPHENIX server?????
+    // SagittaRByCircleFit(cX, cY, sagittaR, vHitR, vHitsPhi, trk.getHitPhi(4), trk.getHitPhi(6));
 
-   Double_t targetCalX = 0.;
-   Double_t targetCalY = 0.;
-   CrossCircleCircle(targetCalX, targetCalY, cX, cY, sagittaR, trk.getHitPhi(4));
-   Double_t calHighestE = 0.;
-   Int_t highestECalId = 99999;
-   for(Int_t iECalT = 0; iECalT < vEmcalHits.size(); iECalT++){
-      Double_t ecalE = vEmcalHits.at(iECalT).energy;
-      if(ecalE < m_EcalEThre) continue;
-      if(ecalE < calHighestE) continue;
-      
-      Double_t tempEcalPhi = vEmcalHits.at(iECalT).phi;
-      Double_t targetECalPhi = std::tan(targetCalY/targetCalX);
-      if((targetECalPhi < 0)&&(cX < 0)) targetECalPhi += TMath::Pi();
-      else if((targetECalPhi > 0)&&(cX < 0)) targetECalPhi -= TMath::Pi();
-      if((targetECalPhi - 0.05 < tempEcalPhi)&&(tempEcalPhi < targetECalPhi + 0.05)){
-         calHighestE = ecalE;
-         highestECalId = iECalT;
-      }
-   }
-   
-   if(highestECalId == 99999) return;
-   trk.setHitIs(6, true);
-   trk.setHitR(6, vEmcalHits.at(highestECalId).r);
-   trk.setHitZ(6, vEmcalHits.at(highestECalId).z);
-   trk.setHitPhi(6, vEmcalHits.at(highestECalId).phi);
-   Double_t ecalTheta = 2*atan(std::exp(-vEmcalHits.at(highestECalId).eta));
-   trk.setHitTheta(6, ecalTheta);
-   
-   // ChecKumaDaYo!!!
-   CalESumAndCorrPosi(trk, vEmcalHits, vIHCalHits, vOHcalHits);
+    Double_t targetCalX = 0.;
+    Double_t targetCalY = 0.;
+    CrossCircleCircle(targetCalX, targetCalY, cX, cY, sagittaR, trk.getHitPhi(4));
+    Double_t calHighestE = 0.;
+    Int_t highestECalId = 99999;
+    for(Int_t iECalT = 0; iECalT < vEmcalHits.size(); iECalT++)
+    {
+        Double_t ecalE = vEmcalHits.at(iECalT).energy;
+        if(ecalE < m_EcalEThre) continue;
+        if(ecalE < calHighestE) continue;
 
-   // Double_t calE = vEmcalHits.at(highestECalId).energy;
-   // // ChecKumaDaYo!!!
-   // calE = AddHCalE(vEmcalHits.at(highestECalId).phi, calE, vIHCalHits, vOHcalHits);
-   // trk.setTrackE(calE);
+        Double_t tempEcalPhi = vEmcalHits.at(iECalT).phi;
+        Double_t targetECalPhi = std::tan(targetCalY/targetCalX);
+        if((targetECalPhi < 0)&&(cX < 0)) targetECalPhi += TMath::Pi();
+        else if((targetECalPhi > 0)&&(cX < 0)) targetECalPhi -= TMath::Pi();
+        if((targetECalPhi - 0.05 < tempEcalPhi)&&(tempEcalPhi < targetECalPhi + 0.05))
+        {
+            calHighestE = ecalE;
+            highestECalId = iECalT;
+        }
+    }
+    
+    if(highestECalId == 99999) return;
+    trk.setHitIs(6, true);
+    trk.setHitR(6, vEmcalHits.at(highestECalId).r);
+    trk.setHitZ(6, vEmcalHits.at(highestECalId).z);
+    trk.setHitPhi(6, vEmcalHits.at(highestECalId).phi);
+    Double_t ecalTheta = 2*atan(std::exp(-vEmcalHits.at(highestECalId).eta));
+    trk.setHitTheta(6, ecalTheta);
+    
+    // ChecKumaDaYo!!!
+    CalESumAndCorrPosi(trk, vEmcalHits, vIHCalHits, vOHcalHits);
+
+    // Double_t calE = vEmcalHits.at(highestECalId).energy;
+    // // ChecKumaDaYo!!!
+    // calE = AddHCalE(vEmcalHits.at(highestECalId).phi, calE, vIHCalHits, vOHcalHits);
+    // trk.setTrackE(calE);
 
 }
 
-void InttSeedTracking::CalESumAndCorrPosi(tracKuma trk, std::vector<hitStruct > vEmcalHits,\
-    std::vector<hitStruct > vIHCalHits, std::vector<hitStruct > vOHCalHits)
+// 对emcalhit取加权平均(w-energy)，energy加上ihcal和ohcal
+void InttSeedTracking::CalESumAndCorrPosi(tracKuma trk, std::vector<hitStruct> vEmcalHits,\
+    std::vector<hitStruct> vIHCalHits, std::vector<hitStruct> vOHCalHits)
 {
     Double_t refCalPhi = trk.getHitPhi(6);
     Double_t refCalTheta = trk.getHitTheta(6);
     Double_t TotEMCalE = 0.;
     Double_t ModifEMCalPhi = 0.;
     Double_t ModifEMCalTheta = 0.;
+
+    // 加权平均算phi，theta
     for(Int_t iEmcal = 0; iEmcal < vEmcalHits.size(); iEmcal++)
     {
         Double_t hitTheta = 2*atan(std::exp(-vEmcalHits.at(iEmcal).eta));
@@ -851,22 +863,25 @@ void InttSeedTracking::ParticleIdentify(tracKuma trk){
 
 }
 
-bool InttSeedTracking::ReturnHitsRPhiVect(std::vector<Double_t >& hitR, std::vector<Double_t >& hitPhi,\
-   std::vector<Int_t > subDetSet, tracKuma trk){
+// 获取track在各个子探测器的R,Phi，命中点极坐标返回，以及检查是否超过3个hit点
+bool InttSeedTracking::ReturnHitsRPhiVect(std::vector<Double_t>& hitR, std::vector<Double_t>& hitPhi,\
+    std::vector<Int_t> subDetSet, tracKuma trk)
+{
+    for(Int_t iDet = 0; iDet < subDetSet.size(); iDet++)
+    {
+        Int_t detID = subDetSet.at(iDet);
+        if(!trk.getHitIs(detID)) continue;
 
-   for(Int_t iDet = 0; iDet < subDetSet.size(); iDet++){
-      Int_t detID = subDetSet.at(iDet);
-      if(!trk.getHitIs(detID)) continue;
-
-      hitR.push_back(trk.getHitR(detID)); 
-      hitPhi.push_back(trk.getHitPhi(detID));
-   }
-   if(hitR.size() < 3) return false;
-   return true;
+        hitR.push_back(trk.getHitR(detID)); 
+        hitPhi.push_back(trk.getHitPhi(detID));
+    }
+    if(hitR.size() < 3) return false;
+    return true;
 }
 
 
-void InttSeedTracking::SetHitParaInTrack(tracKuma& trk, Int_t detId, hitStruct hitSt){
+void InttSeedTracking::SetHitParaInTrack(tracKuma& trk, Int_t detId, hitStruct hitSt)
+{
    trk.setHitIs(detId, true);
    trk.setHitR(detId, hitSt.r);
    trk.setHitZ(detId, hitSt.z);

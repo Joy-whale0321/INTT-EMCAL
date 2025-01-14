@@ -37,7 +37,7 @@ void InttSeedTrackPerformance::Loop(Int_t runNum)
    // == s0 == Event Loop 000000000000000000000000000000000000000000000000000000
    // for (Long64_t jentry=0; jentry<100;jentry++) {
    // for (Long64_t jentry=0; jentry< vTargetEvents.size();jentry++) {
-   for (Long64_t jentry=(1000*runNum+1); jentry<(1000*runNum + 1000); jentry++) {
+   for (Long64_t jentry=(1000*runNum); jentry<(1000*runNum + 9900); jentry++) {
    // for (Long64_t jentry=0; jentry<nentries;jentry++) {
 
       Long64_t tempJEntry = jentry;

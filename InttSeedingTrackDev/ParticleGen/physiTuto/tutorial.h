@@ -39,7 +39,16 @@
 #include <g4main/PHG4Particle.h>
 #include <g4main/PHG4TruthInfoContainer.h>
 #include <g4main/PHG4VtxPoint.h>
+#include <g4main/PHG4HitContainer.h>
+#include <g4main/PHG4TruthInfoContainer.h>
+#include <g4main/PHG4Shower.h>
+#include <g4main/PHG4HitDefs.h>
 
+#include <fun4all/SubsysReco.h>
+
+#include <globalvertex/GlobalVertexMap.h>
+
+#include <vector>
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -83,7 +92,7 @@ class tutorial : public SubsysReco
         database, because you know the run number. A place
         to book histograms which have to know the run number.
     */
-    int InitRun(PHCompositeNode *topNode) override;
+    int InitRun(PHCompositeNode * /*topNode*/) override;
 
     /* Called for each event.
         This is where you do the real work.

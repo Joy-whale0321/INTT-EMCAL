@@ -5,7 +5,7 @@
 #include <GlobalVariables.C>
 
 //#include <G4Setup_sPHENIX_Bbc.C>
-#include <G4Setup_sPHENIX.C>
+#include <G4Setup_sPHENIX_ly.C>
 // #include <G4_Bbc.C>
 // #include <G4_CaloTrigger.C>
 // #include <G4_Centrality.C>
@@ -46,13 +46,14 @@
 R__LOAD_LIBRARY(libfun4all.so)
 
 // #include <physiTuto/tutorial.h>
-#include <tutorial.h>
+#include <tutorial/tutorial.h>
 R__LOAD_LIBRARY( libtutorial.so )
 
 int Fun4All_physiTuto(
-	int nEvents = 5,
-	const double particle_pT = 1,
-    const double energy_range = 0.1,
+	int nEvents = 10,
+	const double particle_pT = 5,
+    const double energy_range_up = 4,
+    const double energy_range_down = 5,
     const string particle_species = "Electron",
     const string &output_directory = "/sphenix/user/jzhang1/INTT-EMCAL/InttSeedingTrackDev/ParticleGen/output/",
     const string &output_filename = "results.root"
@@ -135,7 +136,7 @@ int Fun4All_physiTuto(
       INPUTGENERATOR::SimpleEventGenerator[0] -> add_particles(particle_map[particle_species.c_str()], Nparticle );
       // INPUTGENERATOR::SimpleEventGenerator[0] -> set_name("mu-");
       INPUTGENERATOR::SimpleEventGenerator[0] -> set_vtx(0, 0, 0);
-      INPUTGENERATOR::SimpleEventGenerator[0] -> set_pt_range(particle_pT - energy_range, particle_pT + energy_range);
+      INPUTGENERATOR::SimpleEventGenerator[0] -> set_pt_range(particle_pT - energy_range_down, particle_pT + energy_range_up);
       // INPUTGENERATOR::SimpleEventGenerator[0] -> set_mom(120, 0, 0);
       INPUTGENERATOR::SimpleEventGenerator[0] -> set_eta_range(-1, 1);
       // INPUTGENERATOR::SimpleEventGenerator[0] -> set_eta_range(-0.01, 0.01);

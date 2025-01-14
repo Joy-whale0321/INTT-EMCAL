@@ -14,7 +14,7 @@ void CaloInfo()
 
     // 输入文件
     TChain *tc = new TChain("tree");  
-    std::string fInputName = fDir + "/singleE1500to2500MeVEta0.root";
+    std::string fInputName = fDir + "/ana457_e_1_10GeV.root";
     tc->Add(fInputName.c_str()); 
 
     // 输出文件
@@ -28,6 +28,11 @@ void CaloInfo()
     }
 
     // 定义变量
+    std::vector<double> *CEMC_Hit_x = nullptr; 
+    std::vector<double> *CEMC_Hit_y = nullptr; 
+    std::vector<double> *CEMC_Hit_z = nullptr;
+    std::vector<double> *CEMC_Hit_Edep = nullptr;
+
     std::vector<double> *tower_x = nullptr;
     std::vector<double> *tower_y = nullptr;
     std::vector<double> *tower_z = nullptr;
@@ -43,15 +48,25 @@ void CaloInfo()
     std::vector<double> *caloClus_edep = nullptr;
 
     // 定义直方图
-    auto h_x = new TH1F("h_x", "X position;X (cm);Counts", 100, -100, 100);
-    auto h_y = new TH1F("h_y", "Y position;Y (cm);Counts", 100, -100, 100);
-    auto h_z = new TH1F("h_z", "Z position;Z (cm);Counts", 100, -300, 300);
-    auto h_R = new TH1F("h_R", "Radial distance;R (cm);Counts", 100, 0, 150);
+    auto h_g4hitphi = new TH1F("h_g4hitphi", "Azimuthal angle;Phi (rad);Counts", 100, -TMath::Pi(), TMath::Pi());
     auto h_towerphi = new TH1F("h_towerphi", "Azimuthal angle;Phi (rad);Counts", 100, -TMath::Pi(), TMath::Pi());
     auto h_clustphi = new TH1F("h_clustphi", "Azimuthal angle;Phi (rad);Counts", 100, -TMath::Pi(), TMath::Pi());
-    auto h_eta = new TH1F("h_eta", "Polar angle;Theta (rad);Counts", 100, 0, TMath::Pi());
+    auto h_deltatowertruth = new TH1F("h_deltatowertruth", "h_deltatowertruth;R;Counts", 100, 0, 20);
+    auto h_deltaclusttruth = new TH1F("h_deltaclusttruth", "h_deltaclusttruth;R;Counts", 100, 0, 20);
+    auto h_deltaclusttower = new TH1F("h_deltaclusttower", "h_deltaclusttower;R;Counts", 500, 0, 10);
+
+    auto h2_zr_g4hit = new TH2D("h2_zr_g4hit", "g4hit energy-weighted RZ distribution;Z (cm);R (cm);Weighted Counts", 100, -150, 150, 200, 0, 200);
+    auto h2_zr_tower = new TH2D("h2_zr_tower", "tower energy-weighted RZ distribution;Z (cm);R (cm);Weighted Counts", 100, -150, 150, 200, 0, 200);
+    auto h2_zr_clust = new TH2D("h2_zr_clust", "clust energy-weighted RZ distribution;Z (cm);R (cm);Weighted Counts", 100, -150, 150, 200, 0, 200);
+
+
 
     // 设置分支地址
+    caloinfotree->SetBranchAddress("CEMC_Hit_x", &CEMC_Hit_x);
+    caloinfotree->SetBranchAddress("CEMC_Hit_y", &CEMC_Hit_y);
+    caloinfotree->SetBranchAddress("CEMC_Hit_z", &CEMC_Hit_z);
+    caloinfotree->SetBranchAddress("CEMC_Hit_Edep", &CEMC_Hit_Edep);
+
     caloinfotree->SetBranchAddress("tower_X", &tower_x);
     caloinfotree->SetBranchAddress("tower_Y", &tower_y);
     caloinfotree->SetBranchAddress("tower_Z", &tower_z);
@@ -69,14 +84,51 @@ void CaloInfo()
     // 遍历树的条目
     Long64_t nentries = caloinfotree->GetEntries();
     // for (Long64_t i = 0; i < nentries; i++)
-    for (Long64_t i = 0; i < 10; i++)
+    for (Long64_t i = 0; i < nentries; i++)
     {
         caloinfotree->GetEntry(i);
 
-        Double_t TotEMCalE = 0.;
-        Double_t ModifEMCalPhi = 0.;
+        // 遍历 CEMC_Hit vector 中的每个元素
+        Double_t g4hit_TotEMCalE = 0.;
+        Double_t g4hit_ModifEMCalPhi = 0.;
+        Double_t g4hit_ModifEMCal_x = 0.;
+        Double_t g4hit_ModifEMCal_y = 0.;
+
+        for (size_t j = 0; j < CEMC_Hit_x->size(); j++)
+        {
+            double hitval_x = CEMC_Hit_x->at(j);
+            double hitval_y = CEMC_Hit_y->at(j);
+            double hitval_z = CEMC_Hit_z->at(j);
+            double hitval_R = TMath::Sqrt(hitval_x * hitval_x + hitval_y * hitval_y);
+            double hitval_phi = TMath::ATan2(hitval_y, hitval_x);
+            double hitval_eta = TMath::ATan2(hitval_R, hitval_z);
+            double hitval_edep = CEMC_Hit_Edep->at(j);
+
+            if(hitval_R<300)
+            {
+                g4hit_TotEMCalE += hitval_edep;
+                g4hit_ModifEMCalPhi += hitval_edep * hitval_phi;
+
+                g4hit_ModifEMCal_x += hitval_edep * hitval_x;
+                g4hit_ModifEMCal_y += hitval_edep * hitval_y;
+
+                h2_zr_g4hit->Fill(hitval_z, hitval_R, hitval_edep);
+            }
+        }
+        g4hit_ModifEMCalPhi /= g4hit_TotEMCalE;
+        g4hit_ModifEMCal_x /= g4hit_TotEMCalE;
+        g4hit_ModifEMCal_y /= g4hit_TotEMCalE;
+        double g4hit_ModifEMCal_phi = TMath::ATan2(g4hit_ModifEMCal_y, g4hit_ModifEMCal_x);
+
+        h_g4hitphi->Fill(g4hit_ModifEMCalPhi);
+
 
         // 遍历 tower vector 中的每个元素
+        Double_t tower_TotEMCalE = 0.;
+        Double_t tower_ModifEMCalPhi = 0.;
+        Double_t tower_ModifEMCal_x = 0.;
+        Double_t tower_ModifEMCal_y = 0.;
+
         for (size_t j = 0; j < tower_x->size(); j++)
         {      
             double towerval_x = tower_x->at(j);
@@ -89,18 +141,31 @@ void CaloInfo()
             double Ecalo_threshold = 0.1;
             double towerval_R = TMath::Sqrt(towerval_x * towerval_x + towerval_y * towerval_y);
 
-            if((towerval_edep > Ecalo_threshold)&&(towerval_R<100))
+            if((towerval_edep > Ecalo_threshold)&&(towerval_R<200))
             {
-                TotEMCalE += towerval_edep;
-                ModifEMCalPhi += towerval_edep*towerval_phi;
+                tower_TotEMCalE += towerval_edep;
 
-                h_towerphi->Fill(towerval_phi);
-            }           
+                tower_ModifEMCalPhi += towerval_edep * towerval_phi;
+                tower_ModifEMCal_x += towerval_edep * towerval_x;
+                tower_ModifEMCal_y += towerval_edep * towerval_y;
+
+                h2_zr_tower->Fill(towerval_z, towerval_R, towerval_edep);
+            }                        
         }
-        ModifEMCalPhi /= TotEMCalE;
-        cout<<"i is: "<< i <<", towerval_phi is: "<< ModifEMCalPhi <<endl;
+        tower_ModifEMCalPhi /= tower_TotEMCalE;
+        tower_ModifEMCal_x /= tower_TotEMCalE;
+        tower_ModifEMCal_y /= tower_TotEMCalE;
+        double tower_ModifEMCal_phi = TMath::ATan2(tower_ModifEMCal_y, tower_ModifEMCal_x);
+
+        h_towerphi->Fill(tower_ModifEMCalPhi);
+
 
         // 遍历 cluster vector 中的每个元素
+        Double_t cluster_TotEMCalE = 0.;
+        Double_t cluster_ModifEMCalPhi = 0.;
+        Double_t cluster_ModifEMCal_x = 0.;
+        Double_t cluster_ModifEMCal_y = 0.;
+
         for (size_t j = 0; j < caloClus_x->size(); j++)
         {          
             double clusterval_x = caloClus_x->at(j);
@@ -110,60 +175,46 @@ void CaloInfo()
             double clusterval_phi = caloClus_phi->at(j);
             double clusterval_edep = caloClus_edep->at(j);
 
-            double Ecalo_threshold = 0.5;
-            if((clusterval_edep > Ecalo_threshold)&&(clusterval_R<100))
+            double Ecalo_threshold = 0.1;
+            if((clusterval_edep > Ecalo_threshold)&&(clusterval_R<200))
             {
                 h_clustphi->Fill(clusterval_phi);
-                cout<<"i is: "<< i <<", clusterval_phi is: "<< clusterval_phi <<endl;
+                cluster_ModifEMCal_x += clusterval_x;
+                cluster_ModifEMCal_y += clusterval_y;
+                cluster_TotEMCalE += 1;
+
+                h2_zr_clust->Fill(clusterval_z, clusterval_R, clusterval_edep);
             }           
         }
+        cluster_ModifEMCal_x /= cluster_TotEMCalE;
+        cluster_ModifEMCal_y /= cluster_TotEMCalE;
+
+        // calculate delta truth tower cluster
+        double delta_towertruth = sqrt((tower_ModifEMCal_x - g4hit_ModifEMCal_x)*(tower_ModifEMCal_x - g4hit_ModifEMCal_x) + (tower_ModifEMCal_y - g4hit_ModifEMCal_y)*(tower_ModifEMCal_y - g4hit_ModifEMCal_y)) ;
+        double delta_clustertruth = sqrt((cluster_ModifEMCal_x - g4hit_ModifEMCal_x)*(cluster_ModifEMCal_x - g4hit_ModifEMCal_x) + (cluster_ModifEMCal_y - g4hit_ModifEMCal_y)*(cluster_ModifEMCal_y - g4hit_ModifEMCal_y)) ;
+        
+        double delta_clustertower = sqrt((cluster_ModifEMCal_x - tower_ModifEMCal_x)*(cluster_ModifEMCal_x - tower_ModifEMCal_x) + (cluster_ModifEMCal_y - tower_ModifEMCal_y)*(cluster_ModifEMCal_y - tower_ModifEMCal_y)) ;
+
+
+        h_deltatowertruth->Fill(delta_towertruth);
+        h_deltaclusttruth->Fill(delta_clustertruth);
+        h_deltaclusttower->Fill(delta_clustertower);
+
     }
 
     // 保存直方图到文件
     TFile outfile(fOutputName.c_str(), "RECREATE");
     
+    h_g4hitphi->Write();
     h_towerphi->Write();
     h_clustphi->Write();
+    h_deltatowertruth->Write();
+    h_deltaclusttruth->Write();
+    h_deltaclusttower->Write();
+
+    h2_zr_g4hit->Write();
+    h2_zr_tower->Write();
+    h2_zr_clust->Write();
 
     std::cout << "Histograms saved to " << fOutputName << std::endl;
 }
-
-
-// // 对emcalhit取加权平均(w-energy)，energy加上ihcal和ohcal
-// void CalESumAndCorrPosi(tracKuma trk, std::vector<hitStruct> vEmcalHits,\
-//     std::vector<hitStruct> vIHCalHits, std::vector<hitStruct> vOHCalHits)
-// {
-//     Double_t refCalPhi = trk.getHitPhi(6);
-//     Double_t refCalTheta = trk.getHitTheta(6);
-//     Double_t TotEMCalE = 0.;
-//     Double_t ModifEMCalPhi = 0.;
-//     Double_t ModifEMCalTheta = 0.;
-
-//     // 加权平均算x,y,z
-//     for(Int_t iEmcal = 0; iEmcal < vEmcalHits.size(); iEmcal++)
-//     {
-//         Double_t hitTheta = 2*atan(std::exp(-vEmcalHits.at(iEmcal).eta));
-//         if((hitTheta < refCalTheta - TMath::Pi()/20)&&(refCalTheta + TMath::Pi()/20 < hitTheta)) continue;
-//         if((vEmcalHits.at(iEmcal).phi < refCalPhi - TMath::Pi()/20)&&(refCalPhi + TMath::Pi()/20 < vEmcalHits.at(iEmcal).phi)) continue;
-        
-//         TotEMCalE += vEmcalHits.at(iEmcal).energy;
-//         ModifEMCalPhi += vEmcalHits.at(iEmcal).energy*vEmcalHits.at(iEmcal).phi;
-//         ModifEMCalTheta += vEmcalHits.at(iEmcal).energy*hitTheta;
-//     }
-//     ModifEMCalPhi /= TotEMCalE;
-//     ModifEMCalTheta /= TotEMCalE;
-
-//     // 加权平均算R,phi,theta
-//     for(Int_t iEmcal = 0; iEmcal < vEmcalHits.size(); iEmcal++)
-//     {
-//         Double_t hitTheta = 2*atan(std::exp(-vEmcalHits.at(iEmcal).eta));
-//         if((hitTheta < refCalTheta - TMath::Pi()/20)&&(refCalTheta + TMath::Pi()/20 < hitTheta)) continue;
-//         if((vEmcalHits.at(iEmcal).phi < refCalPhi - TMath::Pi()/20)&&(refCalPhi + TMath::Pi()/20 < vEmcalHits.at(iEmcal).phi)) continue;
-        
-//         TotEMCalE += vEmcalHits.at(iEmcal).energy;
-//         ModifEMCalPhi += vEmcalHits.at(iEmcal).energy*vEmcalHits.at(iEmcal).phi;
-//         ModifEMCalTheta += vEmcalHits.at(iEmcal).energy*hitTheta;
-//     }
-//     ModifEMCalPhi /= TotEMCalE;
-//     ModifEMCalTheta /= TotEMCalE;
-// }

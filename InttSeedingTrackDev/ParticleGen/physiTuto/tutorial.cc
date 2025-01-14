@@ -63,6 +63,47 @@
 
 #include "tutorial.h"
 
+#include <calobase/RawClusterContainer.h>
+#include <calobase/RawTowerGeomContainer.h>
+#include <calobase/RawCluster.h>
+#include <calobase/RawClusterUtility.h>
+#include <calobase/RawTowerDefs.h>
+#include <calobase/RawTowerGeom.h>
+#include <calobase/TowerInfoContainer.h>
+#include <calobase/TowerInfo.h>
+#include <calobase/TowerInfoDefs.h>
+
+#include <ffaobjects/EventHeaderv1.h>
+
+#include <fun4all/Fun4AllReturnCodes.h>
+
+#include <globalvertex/GlobalVertex.h>
+#include <globalvertex/GlobalVertexMap.h>
+#include <globalvertex/MbdVertexMap.h>
+#include <globalvertex/MbdVertex.h>
+#include <globalvertex/SvtxVertexMap.h>
+#include <globalvertex/SvtxVertex.h>
+
+#include <phool/getClass.h>
+#include <phool/PHCompositeNode.h>
+
+#include <Acts/Geometry/GeometryIdentifier.hpp>
+#include <Acts/MagneticField/ConstantBField.hpp>
+#include <Acts/MagneticField/MagneticFieldProvider.hpp>
+#include <Acts/Surfaces/CylinderSurface.hpp>
+#include <Acts/Surfaces/PerigeeSurface.hpp>
+#include <Acts/Geometry/TrackingGeometry.hpp>
+
+#include <CLHEP/Vector/ThreeVector.h>
+#include <math.h>
+#include <vector>
+
+#include <TFile.h>
+#include <TTree.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <TLorentzVector.h>
+
 //____________________________________________________________________________..
 tutorial::tutorial(
   const std::string & name_in,
@@ -86,12 +127,13 @@ tutorial::~tutorial()
 //____________________________________________________________________________..
 int tutorial::Init(PHCompositeNode *topNode)
 {
+    std::cout << topNode << std::endl;
   std::cout << "tutorial::Init(PHCompositeNode *topNode) Initializing" << std::endl;
 
   ////////////////////////////////////////////////////////
   // Initialization of the member                       //
   ////////////////////////////////////////////////////////
-  output = new TFile( output_path.c_str(), "RECREATE" );
+//   output = new TFile( output_path.c_str(), "RECREATE" );
   
     std::cout << "tutorial::Init(PHCompositeNode *topNode) Initializing" << std::endl;
 
@@ -228,7 +270,7 @@ int tutorial::Init(PHCompositeNode *topNode)
 }
 
 //____________________________________________________________________________..
-int tutorial::InitRun(PHCompositeNode *topNode)
+int tutorial::InitRun(PHCompositeNode * /*topNode*/)
 {
   std::cout << "tutorial::InitRun(PHCompositeNode *topNode) Initializing for Run XXX" << std::endl;
   return Fun4AllReturnCodes::EVENT_OK;
@@ -245,8 +287,7 @@ int tutorial::prepareTracker(PHCompositeNode * topNode)
   // Getting Nodes                                                            //
   /////////////////////////////////////////////////////////////////////////////  
   // TRKR_CLUSTER node: Information of TrkrCluster
-  auto *node_cluster_map = 
-    findNode::getClass<TrkrClusterContainerv4>(topNode, "TRKR_CLUSTER");
+  node_cluster_map = findNode::getClass<TrkrClusterContainerv4>(topNode, "TRKR_CLUSTER");
 
   if (!node_cluster_map)
     {
@@ -255,7 +296,7 @@ int tutorial::prepareTracker(PHCompositeNode * topNode)
     }
 
   // ActsGeometry node: for the global coordinate
-  ActsGeometry *node_acts = findNode::getClass<ActsGeometry>(topNode, "ActsGeometry");
+  node_acts = findNode::getClass<ActsGeometry>(topNode, "ActsGeometry");
   if ( !node_acts )
     {
       std::cout << PHWHERE << "No ActsGeometry on node tree. Bailing." << std::endl;
@@ -783,6 +824,15 @@ int tutorial::prepareG4HIT(PHCompositeNode * topNode)
         float x = hit_iter->second->get_x(0);
         float y = hit_iter->second->get_y(0);
         float z = hit_iter->second->get_z(0);
+        
+        int trkid = hit_iter->second->get_trkid();
+        PHG4Particle *part = truthinfo->GetParticle(trkid);
+        v4.SetPxPyPzE(part->get_px(), part->get_py(), part->get_pz(), part->get_e());
+        int pid = part->get_pid();
+        _CEMC_Hit_pid.push_back(pid);
+
+        int vtxid = part->get_vtx_id();
+        PHG4VtxPoint *vtx = truthinfo->GetVtx(vtxid);
 
         // add trkid to a set
         _CEMC_Hit_Evis.push_back(light_yield);
@@ -791,6 +841,10 @@ int tutorial::prepareG4HIT(PHCompositeNode * topNode)
         _CEMC_Hit_x.push_back(x);
         _CEMC_Hit_y.push_back(y);
         _CEMC_Hit_z.push_back(z);
+
+        // _CEMC_Hit_particle_x.push_back(vtx->get_x());
+        // _CEMC_Hit_particle_y.push_back(vtx->get_y());
+        // _CEMC_Hit_particle_z.push_back(vtx->get_z());
     }
 
     return Fun4AllReturnCodes::EVENT_OK;

@@ -15,11 +15,11 @@ void jyTrackPerformance(Int_t runNum=0)
 
     // input file
     TChain *tc = new TChain("tree");  
-    std::string fInputName = fDir + "/singleE1500to2500MeVEta0.root";
+    std::string fInputName = fDir + "/ana457_e_1_10GeV.root";
     tc->Add(fInputName.c_str()); 
 
     // output file
-    std::string fOutputName = fDir+"/trackingWInttCalClu1500to2500MeVEtaWide_v3"; 
+    std::string fOutputName = fDir+"/trackingWInttCalClu1000to10000MeVEtaWide_v2"; 
 
     TTree *tt = (TTree*)tc;
     InttSeedTrackPerformance *h = new InttSeedTrackPerformance(tt, fInputName, fOutputName, runNum);

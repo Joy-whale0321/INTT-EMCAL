@@ -7,13 +7,13 @@ class TrackCaloRegressor(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            # nn.Dropout(0.2),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            # nn.Dropout(0.2),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            # nn.Dropout(0.2),
             nn.Linear(hidden_dim, 1)  # 回归输出
         )
 

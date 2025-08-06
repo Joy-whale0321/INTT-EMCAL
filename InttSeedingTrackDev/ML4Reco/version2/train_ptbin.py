@@ -32,7 +32,7 @@ def train(list_file, pt_min=0.0, pt_max=2.0, batch_size=1024, epochs=300, lr=5e-
             xb, yb = xb.to(device), yb.to(device)
             pred = model(xb)
 
-            pt_reso = (yb - pred) / (yb)
+            pt_reso = (pred - yb) / (yb)
             weights = (pt_reso.abs() < 0.2).float() * 2.0 + 1.0
             loss = ((pt_reso) ** 2 * weights).mean()
             # loss = (pt_reso ** 2).mean()
@@ -49,7 +49,7 @@ def train(list_file, pt_min=0.0, pt_max=2.0, batch_size=1024, epochs=300, lr=5e-
             for xb, yb in val_loader:
                 xb, yb = xb.to(device), yb.to(device)
                 pred = model(xb)
-                pt_reso = (yb - pred) / (yb)
+                pt_reso = (pred - yb) / (yb)
                 weights = (pt_reso.abs() < 0.2).float() * 2.0 + 1.0
                 loss = ((pt_reso) ** 2 * weights).mean()
                 # loss = (pt_reso ** 2).mean()

@@ -7,13 +7,6 @@ from collections import Counter
 from numpy.linalg import norm
 from sklearn.preprocessing import StandardScaler
 
-import ROOT
-
-def angle_between(v1, v2):
-    cos_theta = np.dot(v1, v2) / (norm(v1) * norm(v2))
-    cos_theta = np.clip(cos_theta, -1.0, 1.0)  # 防止数值超出 arccos 定义域
-    return np.arccos(cos_theta)
-
 def point_line_distance(point, line_point1, line_point2):
     """
     计算 point 到 line_point1-line_point2 构成的直线的距离
@@ -40,17 +33,16 @@ class TrackCaloDataset(Dataset):
         data_X = data_X[mask]
         data_Y = data_Y[mask]
 
-        # # 标准化
-        # if scaler is None:
-        #     scaler = StandardScaler()
-        #     data_X = scaler.fit_transform(data_X)
-        # else:
-        #     data_X = scaler.transform(data_X)
+        # 标准化
+        if scaler is None:
+            scaler = StandardScaler()
+            data_X = scaler.fit_transform(data_X)
+        else:
+            data_X = scaler.transform(data_X)
 
         self.X = torch.tensor(data_X, dtype=torch.float32)
         self.Y = torch.tensor(data_Y, dtype=torch.float32).view(-1, 1)
-        self.valid_indices = []
-        # self.scaler = scaler  # 保存 scaler 以便导出或后续使用
+        self.scaler = scaler  # 保存 scaler 以便导出或后续使用
 
     def __len__(self):
         return len(self.X)
@@ -79,13 +71,6 @@ class TrackCaloDataset(Dataset):
         with open(list_file, "r") as f:
             root_files = [line.strip() for line in f if line.strip()]
 
-        # position of EMCal correct
-        file_C = ROOT.TFile.Open(
-            "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/"
-            "ParticleGen/output/calo_positron_dphi_ptbin_woC.root", "READ"
-        )
-        g1_dphi_C = file_C.Get("grPeakVsX") 
-
         for root_file in root_files:
             try:
                 file = uproot.open(root_file)
@@ -100,7 +85,7 @@ class TrackCaloDataset(Dataset):
                     trk_y = data["trk_Y"][i]
                     trk_z = data["trk_Z"][i]
                     
-                    trk_hits = list(zip(trk_layer, trk_x, trk_y))
+                    trk_hits = list(zip(trk_layer, trk_x, trk_y, trk_z))
 
                     # 找到3/4层和5/6层的击中
                     clu_34 = [p for p in trk_hits if p[0] in (3, 4)]
@@ -108,12 +93,8 @@ class TrackCaloDataset(Dataset):
                     if len(clu_34) != 1 or len(clu_56) != 1:
                         continue  # 要求唯一匹配的34、56
                     
-                    p34 = np.array(clu_34[0][1:3])
-                    p56 = np.array(clu_56[0][1:3])
-
-                    phi34 = np.arctan2(p34[1], p34[0])  # y, x
-                    phi56 = np.arctan2(p56[1], p56[0])
-
+                    p34 = np.array(clu_34[0][1:])
+                    p56 = np.array(clu_56[0][1:])
 
                     # 对于每层0/1/2，找到距离 p34-p56 线最近的 cluster
                     track_point_layers = []
@@ -130,11 +111,21 @@ class TrackCaloDataset(Dataset):
                     if not success:
                         continue
                     
-                    trk_feat = np.concatenate([
-                        # np.array(track_point_layers).flatten(),  # 0/1/2 层的 9 维
-                        p34,                                     # INTT 3/4 层的 3 维
-                        p56                                      # INTT 5/6 层的 3 维
+                    # 计算 r34 和 r56
+                    r34 = np.sqrt(p34[0]**2 + p34[1]**2)
+                    r56 = np.sqrt(p56[0]**2 + p56[1]**2)
+                    
+                    # 拼接 r34, z34, r56, z56
+                    trk_feat = np.array([
+                        r34, p34[-1],    # INTT 3/4 层 → r, z
+                        r56, p56[-1]     # INTT 5/6 层 → r, z
                     ])
+
+                    # trk_feat = np.concatenate([
+                    #     # np.array(track_point_layers).flatten(),  # 0/1/2 层的 9 维
+                    #     p34,                                     # INTT 3/4 层的 3 维
+                    #     p56                                      # INTT 5/6 层的 3 维
+                    # ])
 
                     # calo geom center cluster
                     calo_system = data["caloClus_system"][i]
@@ -163,22 +154,25 @@ class TrackCaloDataset(Dataset):
                         continue
                     
                     # calo_innr_feat = np.array([
-                    #     calo_innr_x[0], calo_innr_y[0]
+                    #     calo_innr_x[0], calo_innr_y[0], calo_innr_z[0], calo_innr_e[0]
                     # ])
-                    phi_calo = np.arctan2(calo_innr_y[0], calo_innr_x[0]) 
 
-                    # feat setting
-                    pcalo = np.array([calo_x[0], calo_y[0]]) 
-                    # pcalo = np.array([calo_innr_x[0], calo_innr_y[0]]) 
+                    # 计算 r_innr
+                    r_innr = np.sqrt(calo_innr_x[0]**2 + calo_innr_y[0]**2)
 
-                    # theta_correct = g1_dphi_C.Eval(calo_innr_e)
-                    # rotation_matrix = np.array([[np.cos(theta_correct), -np.sin(theta_correct)],
-                    #                             [np.sin(theta_correct),  np.cos(theta_correct)]])
-                    
-                    # pcalo = rotation_matrix.dot(pcalo)
+                    calo_innr_feat = np.array([
+                        r_innr,
+                        calo_innr_z[0],
+                        calo_innr_e[0]
+                    ])
 
-                    vec1 = p56 - p34
-                    vec2 = pcalo - p56
+                    # 计算角度和 phi 差
+                    pcalo_4align = np.array([calo_x[0], calo_y[0]]) 
+                    p34_4align = np.array(clu_34[0][1:3])
+                    p56_4align = np.array(clu_56[0][1:3])
+
+                    vec1 = p56_4align - p34_4align
+                    vec2 = pcalo_4align - p56_4align
                     cos_theta = np.dot(vec1, vec2) / (norm(vec1) * norm(vec2))
                     cos_theta = np.clip(cos_theta, -1.0, 1.0)
                     angle = np.arccos(cos_theta)
@@ -191,17 +185,8 @@ class TrackCaloDataset(Dataset):
                     if dphi <= 0.01:
                         continue  # 直接 skip 当前 event
 
-                    # proxy_trans = np.log(dphi + 1e-5)
-                    proxy_trans = 1/dphi
-                    
-                    # proxy_eta = -np.log(np.tan(angle / 2))
-
-                    # feat = np.array([angle])  # 弧度值，范围 [0, π]
-                    # feat = np.array([proxy_trans])
-                    feat = np.array([proxy_trans, 0])  # 2D 特征
-
                     # feat = np.concatenate([trk_feat, calo_feat, calo_innr_feat])
-                    # feat = np.concatenate([trk_feat, calo_innr_feat])
+                    feat = np.concatenate([trk_feat, calo_innr_feat])
 
                     X_data.append(feat)
 

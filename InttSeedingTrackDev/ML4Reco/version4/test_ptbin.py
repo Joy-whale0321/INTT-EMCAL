@@ -32,7 +32,7 @@ for pt_min, pt_max in pt_bins:
     model.to(device)
     model.eval()
 
-    visualize_model(model, device, x_min=0.01, x_max=0.5, num_points=500)
+    # visualize_model(model, device, x_min=0.01, x_max=0.5, num_points=500)
 
     # 直方图
     name = f"h_relerr_{pt_min}_{pt_max}"
@@ -62,9 +62,11 @@ for pt_min, pt_max in pt_bins:
                 hist_010.Fill(yi, rei)
 
     # hist.Fit("gaus", "", "", -0.1, 0.1)
+    out_file.cd()
     hist.Write()
     hist2d.Write()
-    
+
+out_file.cd()    
 hist_010.Write()
 
 out_file.Close()

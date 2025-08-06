@@ -43,7 +43,7 @@ for pt_min, pt_max in pt_bins:
                 # Apply correction for reco_pt >= 8.8
                 if reco_pt >= 8.8:
                     correction_factor = 0.02 + 0.08 * (reco_pt - 8.8)
-                    pred_np[i] = reco_pt * (1.0 + correction_factor)
+                    # pred_np[i] = reco_pt * (1.0 + correction_factor)
 
             rel_err = (pred_np - y_np) / (y_np)
 
@@ -66,6 +66,7 @@ for pt_min, pt_max in pt_bins:
 
     # c1.SaveAs("outputFile/h_relerr_combined_fit.png")
 
+    out_file.cd()
     hist1d.Write()
     hist2d.Write()
 

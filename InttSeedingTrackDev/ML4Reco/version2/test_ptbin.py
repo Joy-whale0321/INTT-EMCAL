@@ -9,7 +9,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # pt_bins = [(0, 2), (2, 4), (4, 6), (6, 8), (8, 10)]
 pt_bins = [(0, 10)]
 
-out_file = ROOT.TFile("outputFile/pt_relative_error_INTT_CaloI.root", "RECREATE")
+out_file = ROOT.TFile("outputFile/pt_relative_error_INTT_CaloI_ontrain.root", "RECREATE")
 
 name_010 = f"h2_pt_vs_relerr_all"
 title_010 = f"pt vs RelErr for 0 < pt < 10;truth pt;(pred - truth)/truth"
@@ -21,7 +21,7 @@ for pt_min, pt_max in pt_bins:
     # 加载 scaler 和数据（注意要传 pt 范围）
     scaler = joblib.load(f"model_weight/scaler_pt_{pt_min:.1f}_{pt_max:.1f}_INTT_CaloIwoE.pkl")
     # scaler = joblib.load(f"model_weight/scaler_pt_0.0_10.0_INTT_CaloI.pkl")
-    dataset = TrackCaloDataset("../test500k.list", scaler=scaler, pt_min=pt_min, pt_max=pt_max)
+    dataset = TrackCaloDataset("../train500k.list", scaler=scaler, pt_min=pt_min, pt_max=pt_max)
     loader = torch.utils.data.DataLoader(dataset, batch_size=256)
 
     # 加载模型

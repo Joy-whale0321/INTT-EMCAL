@@ -55,7 +55,7 @@ class FusionDataset(Dataset):
                 # embed
                 pt_bin_edges = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # 11 个 edges → 10 个 bin
                 pt_bin_onehot = [0] * 10  # 10 维 one-hot
-        
+                
                 for j in range(len(pt_bin_edges)-1):
                     if pt_est >= pt_bin_edges[j] and pt_est < pt_bin_edges[j+1]:
                         pt_bin_onehot[j] = 1

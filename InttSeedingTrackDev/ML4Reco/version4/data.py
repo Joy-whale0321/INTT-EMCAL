@@ -7,6 +7,8 @@ from collections import Counter
 from numpy.linalg import norm
 from sklearn.preprocessing import StandardScaler
 
+import ROOT
+
 def angle_between(v1, v2):
     cos_theta = np.dot(v1, v2) / (norm(v1) * norm(v2))
     cos_theta = np.clip(cos_theta, -1.0, 1.0)  # 防止数值超出 arccos 定义域
@@ -76,6 +78,13 @@ class TrackCaloDataset(Dataset):
 
         with open(list_file, "r") as f:
             root_files = [line.strip() for line in f if line.strip()]
+
+        # position of EMCal correct
+        file_C = ROOT.TFile.Open(
+            "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/"
+            "ParticleGen/output/calo_positron_dphi_ptbin_woC.root", "READ"
+        )
+        g1_dphi_C = file_C.Get("grPeakVsX") 
 
         for root_file in root_files:
             try:
@@ -160,11 +169,13 @@ class TrackCaloDataset(Dataset):
 
                     # feat setting
                     pcalo = np.array([calo_x[0], calo_y[0]]) 
-                    # theta_offset = 0.0083  # rad
-                    # rotation_matrix = np.array([[np.cos(-theta_offset), -np.sin(-theta_offset)],
-                    #                             [np.sin(-theta_offset),  np.cos(-theta_offset)]])
+                    # pcalo = np.array([calo_innr_x[0], calo_innr_y[0]]) 
+
+                    # theta_correct = g1_dphi_C.Eval(calo_innr_e)
+                    # rotation_matrix = np.array([[np.cos(theta_correct), -np.sin(theta_correct)],
+                    #                             [np.sin(theta_correct),  np.cos(theta_correct)]])
                     
-                    # pcalo_rot = rotation_matrix @ pcalo
+                    # pcalo = rotation_matrix.dot(pcalo)
 
                     vec1 = p56 - p34
                     vec2 = pcalo - p56
@@ -182,10 +193,12 @@ class TrackCaloDataset(Dataset):
 
                     # proxy_trans = np.log(dphi + 1e-5)
                     proxy_trans = 1/dphi
+                    
+                    # proxy_eta = -np.log(np.tan(angle / 2))
 
                     # feat = np.array([angle])  # 弧度值，范围 [0, π]
-                    feat = np.array([proxy_trans])
-                    # feat = np.concatenate([p34, p56, pcalo])
+                    # feat = np.array([proxy_trans])
+                    feat = np.array([proxy_trans, 0])  # 2D 特征
 
                     # feat = np.concatenate([trk_feat, calo_feat, calo_innr_feat])
                     # feat = np.concatenate([trk_feat, calo_innr_feat])

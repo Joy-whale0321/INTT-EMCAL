@@ -66,7 +66,7 @@ def train_fusion(list_file, pt_min=0.0, pt_max=10.0, batch_size=1024, epochs=300
 
 
 if __name__ == "__main__":
-    list_file = "../train500k.list"
+    list_file = "../train50k.list"
     pt_bins = [(0, 10.0)]
     for pt_min, pt_max in pt_bins:
         train_fusion(list_file, pt_min=pt_min, pt_max=pt_max)

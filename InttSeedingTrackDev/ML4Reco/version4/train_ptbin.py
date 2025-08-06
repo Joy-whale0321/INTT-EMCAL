@@ -56,17 +56,17 @@ def train(list_file, pt_min=0.0, pt_max=2.0, batch_size=1024, epochs=500, lr=5e-
             xb, yb = xb.to(device), yb.to(device)
             pred = model(xb)
 
-            pt_reso = (yb - pred) / (yb)
+            pt_reso = (pred - yb) / (yb)
             weights = (pt_reso.abs() < 0.2).float() * 2.0 + 1.0
             main_loss = ((pt_reso) ** 2 * weights).mean()
 
             # === boundary loss ===
-            # x_boundary_np = np.array([5e-4, 1e-3, 5e-3, 1e-2])
-            # x_boundary = torch.tensor(x_boundary_np, dtype=torch.float32).unsqueeze(1).to(device)
-            # y_boundary_target = torch.tensor([384, 192, 38.4, 19.2], dtype=torch.float32).unsqueeze(1).to(device)
-            x_boundary_np = np.array([0.5, 1, 2, 10, 15, 25, 50, 100, 200])
-            x_boundary = torch.tensor(x_boundary_np, dtype=torch.float32).unsqueeze(1).to(device)
-            y_boundary_target = torch.tensor([0.0961, 0.1922, 0.3844, 1.922, 2.883, 4.805, 9.61, 19.22, 38.44], dtype=torch.float32).unsqueeze(1).to(device)
+            x1 = np.array([0, 0.5, 1, 2, 10, 15, 25, 50, 100, 200])
+            x2 = np.zeros_like(x1)    
+            # x_boundary_np = np.stack([x1], axis=1)
+            x_boundary_np = np.stack([x1, x2], axis=1)
+            x_boundary = torch.tensor(x_boundary_np, dtype=torch.float32).to(device)
+            y_boundary_target = torch.tensor([0, 0.0961, 0.1922, 0.3844, 1.922, 2.883, 4.805, 9.61, 19.22, 38.44], dtype=torch.float32).unsqueeze(1).to(device)
 
             y_boundary_pred = model(x_boundary)
             boundary_loss = nn.MSELoss()(y_boundary_pred, y_boundary_target)
@@ -144,16 +144,16 @@ def train(list_file, pt_min=0.0, pt_max=2.0, batch_size=1024, epochs=500, lr=5e-
             for xb, yb in val_loader:
                 xb, yb = xb.to(device), yb.to(device)
                 pred = model(xb)
-                pt_reso = (yb - pred) / (yb)
+                pt_reso = (pred - yb) / (yb)
                 weights = (pt_reso.abs() < 0.2).float() * 2.0 + 1.0
                 main_loss = ((pt_reso) ** 2 * weights).mean()
 
-                # x_boundary_np = np.array([5e-4, 1e-3, 5e-3, 1e-2])
-                # x_boundary = torch.tensor(x_boundary_np, dtype=torch.float32).unsqueeze(1).to(device)
-                # y_boundary_target = torch.tensor([384, 192, 38.4, 19.2], dtype=torch.float32).unsqueeze(1).to(device)
-                x_boundary_np = np.array([0.5, 1, 2, 10, 15, 25, 50, 100, 200])
-                x_boundary = torch.tensor(x_boundary_np, dtype=torch.float32).unsqueeze(1).to(device)
-                y_boundary_target = torch.tensor([0.0961, 0.1922, 0.3844, 1.922, 2.883, 4.805, 9.61, 19.22, 38.44], dtype=torch.float32).unsqueeze(1).to(device)
+                x1 = np.array([0, 0.5, 1, 2, 10, 15, 25, 50, 100, 200])
+                x2 = np.zeros_like(x1)    
+                # x_boundary_np = np.stack([x1], axis=1)
+                x_boundary_np = np.stack([x1, x2], axis=1)
+                x_boundary = torch.tensor(x_boundary_np, dtype=torch.float32).to(device)
+                y_boundary_target = torch.tensor([0, 0.0961, 0.1922, 0.3844, 1.922, 2.883, 4.805, 9.61, 19.22, 38.44], dtype=torch.float32).unsqueeze(1).to(device)
 
                 y_boundary_pred = model(x_boundary)
                 boundary_loss = nn.MSELoss()(y_boundary_pred, y_boundary_target)
@@ -179,6 +179,7 @@ def train(list_file, pt_min=0.0, pt_max=2.0, batch_size=1024, epochs=500, lr=5e-
 
     print("✅ 训练完成。最优模型保存在 best_model_*.pt")
 
+    out_file.cd()
     hist2d.Write()
     hist_prof.Write()
     h2_p34.Write()

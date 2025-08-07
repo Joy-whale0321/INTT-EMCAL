@@ -40,7 +40,7 @@ if [ ! -d "${final_output_directory}" ]; then
     mkdir -p ${completed_foldername}
 fi
 
-root.exe -q -b Fun4All_physiTuto.C\($Nevents,$particle_pT,$energy_range_down,$energy_range_up,\"$particle_species\",\"$final_output_directory\",\"$output_filename\"\)
+root.exe -q -b Fun4All_physiTuto.C\($Nevents,$particle_pT,$energy_range_up,$energy_range_down,\"$particle_species\",\"$final_output_directory\",\"$output_filename\"\)
 
 output_filename_nosuffix=${output_filename%.root}
 

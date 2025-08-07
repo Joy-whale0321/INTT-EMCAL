@@ -6,7 +6,7 @@
 #include <G4_Mbd.C>
 #include <G4_BlackHole.C>
 #include <G4_CEmc_Albedo.C>
-#include "G4_CEmc_Spacal.C"
+#include <G4_CEmc_Spacal.C>
 #include <G4_EPD.C>
 #include <G4_HcalIn_ref.C>
 #include <G4_HcalOut_ref.C>
@@ -99,7 +99,7 @@ int G4Setup()
   {  // conversion to double fails -> we have a string
 
     if (G4MAGNET::magfield.find("sphenix3dbigmapxyz") != string::npos ||
-        G4MAGNET::magfield == "CDB")
+        G4MAGNET::magfield.find(".root") == string::npos)
     {
       g4Reco->set_field_map(G4MAGNET::magfield, PHFieldConfig::Field3DCartesian);
     }
@@ -111,6 +111,7 @@ int G4Setup()
   else
   {
     g4Reco->set_field(fieldstrength);  // use const soleniodal field
+    G4MAGNET::magfield_tracking = G4MAGNET::magfield; // set tracking fieldmap to value
   }
   g4Reco->set_field_rescale(G4MAGNET::magfield_rescale);
 

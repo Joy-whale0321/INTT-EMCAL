@@ -5,7 +5,7 @@
 #include <GlobalVariables.C>
 
 //#include <G4Setup_sPHENIX_Bbc.C>
-#include <G4Setup_sPHENIX_macro.C>
+#include <G4Setup_sPHENIX.C>
 // #include <G4_Bbc.C>
 // #include <G4_CaloTrigger.C>
 // #include <G4_Centrality.C>
@@ -43,33 +43,21 @@
 #include <phool/PHRandomSeed.h>
 #include <phool/recoConsts.h>
 
-#include <iostream>
-#include <typeinfo>
-
 R__LOAD_LIBRARY(libfun4all.so)
 
 // #include <physiTuto/tutorial.h>
-#include <tutorial/tutorial.h>
-#include <tutorial/TruthToSvtxTrack.h>
+#include <tutorial.h>
 R__LOAD_LIBRARY( libtutorial.so )
 
-#include <caloreco/CaloGeomMappingv2.h>
-#include <calogeomtest/CaloGeomTest.h>
-R__LOAD_LIBRARY(libcalo_reco.so)
-R__LOAD_LIBRARY(libcalogeomtest.so)
-
-void Fun4All_physiTuto(
-	int nEvents = 3,
-	const double particle_pT = 5.0,
-    const double energy_range_up = 0.0,
-    const double energy_range_down = 0.0,
-    const string particle_species = "Electron",
-    const string &output_directory = "/sphenix/user/jzhang1/INTT-EMCAL/InttSeedingTrackDev/ParticleGen/output/",
-    const string &output_filename = "results_test.root"
-)
+int Fun4All_physiTuto(
+		     int nEvents = 5,
+		     const double particle_pT = 1,
+         const double energy_range = 0.1,
+         const string particle_species = "PionPlus",
+         const string &output_directory = "/sphenix/user/jaein213/INTT_Jaein/INTT/general_codes/tkumaoka/InttSeedingTrackDev/ParticleGen/output/",
+         const string &output_filename = "results.root"
+		     )
 {
-    std::cout << "CEMC_Clusters function is located at: " << (void*) CEMC_Clusters << std::endl;
-
   const int skip = 0;
 	const bool is_pythia = false;
   const int Nparticle = 1;
@@ -81,20 +69,21 @@ void Fun4All_physiTuto(
     {"PionMinus", "pi-"},
     {"PionPlus", "pi+"},
     {"Electron", "e-"},
-    {"Positron", "e+"}
-    // {"Proton", "proton"},
-    // {"Kaon", "kaon-"}
+    {"Positron", "e+"},
+    {"Proton", "proton"},
+    {"KaonMinus", "kaon-"},
+    {"KaonPlus", "kaon+"}
   };
 
   if (particle_map.find(particle_species) == particle_map.end())
   {
     cout << "Invalid particle species: " << particle_species << endl;
-    return;
+    return -1;
   }
 
   Fun4AllServer *se = Fun4AllServer::instance();
   //  se->Print("NODETREE"); // useless
-  se->Verbosity(0);
+  //se->Verbosity(0);
 
   //Opt to print all random seed used for debugging reproducibility. Comment out to reduce stdout prints.
   //PHRandomSeed::Verbosity(1);
@@ -148,9 +137,9 @@ void Fun4All_physiTuto(
       INPUTGENERATOR::SimpleEventGenerator[0] -> add_particles(particle_map[particle_species.c_str()], Nparticle );
       // INPUTGENERATOR::SimpleEventGenerator[0] -> set_name("mu-");
       INPUTGENERATOR::SimpleEventGenerator[0] -> set_vtx(0, 0, 0);
-      INPUTGENERATOR::SimpleEventGenerator[0] -> set_pt_range(particle_pT - energy_range_down, particle_pT + energy_range_up);
+      INPUTGENERATOR::SimpleEventGenerator[0] -> set_pt_range(particle_pT - energy_range, particle_pT + energy_range);
       // INPUTGENERATOR::SimpleEventGenerator[0] -> set_mom(120, 0, 0);
-      INPUTGENERATOR::SimpleEventGenerator[0] -> set_eta_range(-1.1, 1.1); // +-1
+      INPUTGENERATOR::SimpleEventGenerator[0] -> set_eta_range(-1, 1);
       // INPUTGENERATOR::SimpleEventGenerator[0] -> set_eta_range(-0.01, 0.01);
       INPUTGENERATOR::SimpleEventGenerator[0] -> set_phi_range(-M_PI, M_PI);
     }
@@ -201,6 +190,8 @@ void Fun4All_physiTuto(
   Enable::INTT_CELL				= Enable::INTT && true;
   Enable::INTT_CLUSTER		= Enable::INTT_CELL && true;
   Enable::INTT_QA				  = Enable::INTT_CLUSTER && Enable::QA && true;
+
+
   
   Enable::TPC					  = true;
   Enable::TPC_ABSORBER	= true;
@@ -296,7 +287,7 @@ void Fun4All_physiTuto(
   if (Enable::CEMC_CELL) CEMC_Cells();
   if (Enable::CEMC_TOWER) CEMC_Towers();
   if (Enable::CEMC_CLUSTER) CEMC_Clusters();
-    
+  
   if (Enable::HCALIN_CELL) HCALInner_Cells();
   if (Enable::HCALOUT_CELL) HCALOuter_Cells();
   if (Enable::HCALIN_TOWER) HCALInner_Towers();
@@ -307,7 +298,7 @@ void Fun4All_physiTuto(
 
   /////////////////
   // SVTX tracking
-  ////////////////
+  //////////////--
   if(Enable::TRACKING_TRACK) TrackingInit();
   if (Enable::MVTX_CLUSTER) Mvtx_Clustering();
   if (Enable::INTT_CLUSTER) Intt_Clustering();
@@ -323,45 +314,29 @@ void Fun4All_physiTuto(
   
   // if (Enable::TRACKING_EVAL) Tracking_Eval(outputroot + "_g4svtx_eval.root");
 
-    // Load the modified geometry
-    CaloGeomMappingv2 *cgm = new CaloGeomMappingv2();
-    cgm->set_detector_name("CEMC");
-    cgm->setTowerGeomNodeName("TOWERGEOM_CEMCv3");
-    se->registerSubsystem(cgm);
+  tutorial* analysis_module = new tutorial( 
+    "name", 
+    output_directory,
+    output_filename
+  );
+  // string output_path = "tutorial_results_";
+  // output_path += "pythia8_MC.root";
 
-    TruthToSvtxTrack *t2t = new TruthToSvtxTrack();
-    se->registerSubsystem(t2t);
-
-    auto truthProjection = new PHActsTrackProjection("TruthTrackProjection");
-    bool doEMcalRadiusCorr = true; // Set to true to apply the radius correction
-    float new_cemc_rad = 99;
-    if (doEMcalRadiusCorr)
-    {
-        truthProjection->setLayerRadius(SvtxTrack::CEMC, new_cemc_rad);
-    }
-    se->registerSubsystem(truthProjection);
-
-    // // tutorial info get
-    tutorial* analysis_module = new tutorial( "name", output_directory, output_filename);
-    analysis_module->setTowerGeomNodeName("TOWERGEOM_CEMCv3");
-    // string output_path = "tutorial_results_";
-    // output_path += "pythia8_MC.root";
-    // analysis_module->SetOutputPath(output_path);
-    se->registerSubsystem(analysis_module);
+  // analysis_module->SetOutputPath( output_path );
+  se->registerSubsystem( analysis_module );
   
-    // Flag Handler is always needed to read flags from input (if used)
-    // and update our rc flags with them. At the end it saves all flags
-    // again on the DST in the Flags node under the RUN node
-    // FlagHandler *flag = new FlagHandler();
-    // se->registerSubsystem(flag);
-    se->skip(skip);
-    se->run(nEvents);
-    se->End();
-    
-    std::cout << "All done!" << std::endl;
+  // Flag Handler is always needed to read flags from input (if used)
+  // and update our rc flags with them. At the end it saves all flags
+  // again on the DST in the Flags node under the RUN node
+  // FlagHandler *flag = new FlagHandler();
+  // se->registerSubsystem(flag);
+  se->skip(skip);
+  se->run(nEvents);
+  se->End();
+  delete se;
 
-    gSystem->Exit(0);
-    return;
+  gSystem->Exit(0);
+  return 0;
 }
 
 

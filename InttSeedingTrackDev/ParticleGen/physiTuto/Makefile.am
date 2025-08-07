@@ -11,14 +11,20 @@ AM_LDFLAGS = \
   -L$(OFFLINE_MAIN)/lib64
 
 pkginclude_HEADERS = \
-  tutorial.h
+  tutorial.h \
+  CaloOnly.h \
+  caloHistGen.h \
+  TruthToSvtxTrack.h
 
 lib_LTLIBRARIES = \
   libtutorial.la
 
 libtutorial_la_SOURCES = \
-  tutorial.cc
-
+  tutorial.cc \
+  CaloOnly.cc \
+  caloHistGen.cc \
+  TruthToSvtxTrack.cc
+  
 libtutorial_la_LIBADD = \
   -lphool \
   -lSubsysReco \

@@ -16,6 +16,18 @@
 
 #include <phool/getClass.h>
 
+#include <globalvertex/GlobalVertexMap.h>
+#include <globalvertex/SvtxVertexMap.h>
+#include <ffarawobjects/Gl1Packet.h>
+#include <trackbase_historic/SvtxPHG4ParticleMap_v1.h>
+#include <trackbase_historic/SvtxTrack.h>
+#include <trackbase_historic/SvtxTrack_v1.h>
+#include <trackbase_historic/SvtxTrack_v2.h>
+#include <trackbase_historic/SvtxTrackMap.h>
+#include <trackbase_historic/SvtxTrackMap_v1.h>
+#include <trackbase_historic/SvtxTrackState_v1.h>
+#include <trackbase_historic/TrackSeed.h>
+
 #include <trackbase/TrkrClusterv4.h>
 #include <trackbase/TrkrClusterContainerv4.h>
 #include <trackbase/TrkrDefs.h>
@@ -69,7 +81,7 @@ class PHCompositeNode;
 
 class tutorial : public SubsysReco
 {
- public:
+public:
 
     tutorial(
         const std::string & name_in = "tutorial",
@@ -114,7 +126,13 @@ class tutorial : public SubsysReco
     void Print(const std::string &what = "ALL") const override;
 
     void SetOutputPath( std::string path ){ output_path = path; };
- private:
+
+    void setTowerGeomNodeName(const std::string& name)
+    {
+        m_TowerGeomNodeName = name;
+    }
+ 
+private:
     int prepareTracker(PHCompositeNode * topNode);
     int prepareEMCal(PHCompositeNode * topNode);
     int prepareiHCal(PHCompositeNode * topNode);
@@ -126,6 +144,11 @@ class tutorial : public SubsysReco
 
     int prepareG4Turth(PHCompositeNode * topNode);
     int prepareG4HIT(PHCompositeNode * topNode);
+
+    int createTracksFromTruth(PHCompositeNode* topNode);
+    int prepareTruthTrack(PHCompositeNode* topNode);
+
+    bool checkTrack(SvtxTrack* track);
 
     std::string output_path;
     std::string output_rootfile_name;
@@ -144,6 +167,7 @@ class tutorial : public SubsysReco
     TowerInfoContainer * EMCal_tower_calib = nullptr;
     
     RawClusterContainer * EMCal_cluster_cont = nullptr;
+    RawClusterContainer * EMCal_cluster_innr = nullptr;
     
     RawTowerGeomContainer * geomIH = nullptr;
     RawTowerContainer * iHCal_tower_sim = nullptr;
@@ -159,6 +183,10 @@ class tutorial : public SubsysReco
     
     PHG4TruthInfoContainer *m_truth_info = nullptr;
     PHG4HitContainer *hits_CEMC = nullptr;
+
+    SvtxTrackMap* trackMap = nullptr;
+    SvtxTrack *truth_track = nullptr;
+    SvtxTrackState *thisState = nullptr;
 
     long long eventID;
 
@@ -178,6 +206,7 @@ class tutorial : public SubsysReco
     std::vector <double> tower_X;
     std::vector <double> tower_Y;
     std::vector <double> tower_Z;
+    std::vector <double> tower_R;
     std::vector <double> tower_Eta;
     std::vector <double> tower_Phi;
     std::vector <double> tower_Eta_test;
@@ -185,6 +214,11 @@ class tutorial : public SubsysReco
     std::vector <double> tower_Eta_bin;
     std::vector <double> tower_Phi_bin;
     std::vector <double> tower_edep;
+
+    std::vector <double> tower_int_X;
+    std::vector <double> tower_int_Y;
+    std::vector <double> tower_int_Z;
+    std::vector <double> tower_int_R;
 
     int nCaloClus;
     std::vector <int> caloClus_system;
@@ -194,6 +228,13 @@ class tutorial : public SubsysReco
     std::vector <double> caloClus_R;
     std::vector <double> caloClus_Phi;
     std::vector <double> caloClus_edep;
+
+    std::vector <double> caloClus_innr_X;
+    std::vector <double> caloClus_innr_Y;
+    std::vector <double> caloClus_innr_Z;
+    std::vector <double> caloClus_innr_R;
+    std::vector <double> caloClus_innr_Phi;
+    std::vector <double> caloClus_innr_edep;
 
     // note : Truth primary vertex information
     float TruthPV_trig_x_;
@@ -222,6 +263,17 @@ class tutorial : public SubsysReco
     std::vector<float> _CEMC_Hit_y;
     std::vector<float> _CEMC_Hit_z;
 
+    std::vector<float> _CEMC_Pr_Hit_x;
+    std::vector<float> _CEMC_Pr_Hit_y;
+    std::vector<float> _CEMC_Pr_Hit_z;
+    std::vector<float> _CEMC_Pr_Hit_R;
+    std::vector<float> _CEMC_Pr_Hit_deltaT;
+
+    std::vector<float> _PrG4_TTPRO_dD;
+    std::vector<float> _PrG4_TTPRO_dR;
+    std::vector<float> _PrG4_TTPRO_dphi;
+
+    std::set<int> primary_electron_tracks;
 
     int nEMCal_chan = 24576;
     int niHCal_chan = 1536;
@@ -230,11 +282,12 @@ class tutorial : public SubsysReco
     const std::string ihcal_node_name = "TOWERINFO_CALIB_HCALIN";
     const std::string ohcal_node_name = "TOWERINFO_CALIB_HCALOUT";
 
-
     const std::string emcalClus_node_name = "CLUSTER_CEMC";
+    const std::string emcalClus_inner_node_name = "CLUSTERINNER_CEMC";
     const std::string ihcalClus_node_name = "CLUSTER_HCALIN";
     const std::string ohcalClus_node_name = "CLUSTER_HCALOUT";
     
+    std::string m_TowerGeomNodeName = "TOWERGEOM_CEMC";
 };
 
 #endif // TUTORIAL_H

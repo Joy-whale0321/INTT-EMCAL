@@ -63,12 +63,25 @@
 
 #include "tutorial.h"
 
+#include <globalvertex/GlobalVertexMap.h>
+#include <globalvertex/SvtxVertexMap.h>
+#include <ffarawobjects/Gl1Packet.h>
+#include <trackbase_historic/SvtxPHG4ParticleMap_v1.h>
+#include <trackbase_historic/SvtxTrack.h>
+#include <trackbase_historic/SvtxTrack_v1.h>
+#include <trackbase_historic/SvtxTrack_v2.h>
+#include <trackbase_historic/SvtxTrackMap.h>
+#include <trackbase_historic/SvtxTrackMap_v1.h>
+#include <trackbase_historic/SvtxTrackState_v1.h>
+#include <trackbase_historic/TrackSeed.h>
+
 #include <calobase/RawClusterContainer.h>
 #include <calobase/RawTowerGeomContainer.h>
 #include <calobase/RawCluster.h>
 #include <calobase/RawClusterUtility.h>
 #include <calobase/RawTowerDefs.h>
 #include <calobase/RawTowerGeom.h>
+#include <calobase/RawTowerGeomv5.h>
 #include <calobase/TowerInfoContainer.h>
 #include <calobase/TowerInfo.h>
 #include <calobase/TowerInfoDefs.h>
@@ -106,14 +119,14 @@
 
 //____________________________________________________________________________..
 tutorial::tutorial(
-  const std::string & name_in,
+    const std::string & name_in,
     std::string output_path_in,
     std::string output_rootfile_name_in):
-  SubsysReco(name_in),
-  output_path(output_path_in),
-  output_rootfile_name(output_rootfile_name_in),
-  file_out(nullptr),
-  output( nullptr )
+    SubsysReco(name_in),
+    output_path(output_path_in),
+    output_rootfile_name(output_rootfile_name_in),
+    file_out(nullptr),
+    output( nullptr )
 {
   std::cout << "tutorial::tutorial(const std::string &name) Calling ctor" << std::endl;
 }
@@ -153,6 +166,7 @@ int tutorial::Init(PHCompositeNode *topNode)
     tower_X.clear();
     tower_Y.clear();
     tower_Z.clear();
+    tower_R.clear();
     tower_Eta.clear();
     tower_Phi.clear();
     tower_Eta_test.clear();
@@ -162,6 +176,11 @@ int tutorial::Init(PHCompositeNode *topNode)
     tower_edep.clear();
     tower_system.clear();
 
+    tower_int_X.clear();
+    tower_int_Y.clear();
+    tower_int_Z.clear();
+    tower_int_R.clear();
+
     nCaloClus = 0;
     caloClus_X.clear();
     caloClus_Y.clear();
@@ -170,6 +189,13 @@ int tutorial::Init(PHCompositeNode *topNode)
     caloClus_Phi.clear();
     caloClus_edep.clear();
     caloClus_system.clear();
+
+    caloClus_innr_X.clear();
+    caloClus_innr_Y.clear();
+    caloClus_innr_Z.clear();
+    caloClus_innr_R.clear();
+    caloClus_innr_Phi.clear();
+    caloClus_innr_edep.clear();
 
     // note : Truth primary vertex information
     TruthPV_trig_x_ = -999;
@@ -197,6 +223,14 @@ int tutorial::Init(PHCompositeNode *topNode)
     _CEMC_Hit_y.clear();
     _CEMC_Hit_z.clear();
 
+    _CEMC_Pr_Hit_x.clear();
+    _CEMC_Pr_Hit_y.clear();
+    _CEMC_Pr_Hit_z.clear();
+    _CEMC_Pr_Hit_R.clear();
+    _CEMC_Pr_Hit_deltaT.clear();
+
+    primary_electron_tracks.clear();
+
     ////////////////////////////////////////////////////////
     // Initialization of the member                       //
     ////////////////////////////////////////////////////////
@@ -222,6 +256,7 @@ int tutorial::Init(PHCompositeNode *topNode)
     tree_out -> Branch("tower_X", & tower_X);
     tree_out -> Branch("tower_Y", & tower_Y);
     tree_out -> Branch("tower_Z", & tower_Z);
+    tree_out -> Branch("tower_R", & tower_R);
     tree_out -> Branch("tower_Eta", & tower_Eta);
     tree_out -> Branch("tower_Phi", & tower_Phi);
     tree_out -> Branch("tower_Eta_test", & tower_Eta_test);
@@ -229,6 +264,11 @@ int tutorial::Init(PHCompositeNode *topNode)
     tree_out -> Branch("tower_Eta_bin", & tower_Eta_bin);
     tree_out -> Branch("tower_Phi_bin", & tower_Phi_bin);
     tree_out -> Branch("tower_edep", & tower_edep);
+
+    tree_out -> Branch("tower_int_X", & tower_int_X);
+    tree_out -> Branch("tower_int_Y", & tower_int_Y);
+    tree_out -> Branch("tower_int_Z", & tower_int_Z);
+    tree_out -> Branch("tower_int_R", & tower_int_R);
 
 
     // note : the calorimeter raw tower information with the calibration, and introduction of noise hits
@@ -241,7 +281,12 @@ int tutorial::Init(PHCompositeNode *topNode)
     tree_out -> Branch("caloClus_Phi", & caloClus_Phi);
     tree_out -> Branch("caloClus_edep", & caloClus_edep);
 
-
+    tree_out -> Branch("caloClus_innr_X", & caloClus_innr_X);
+    tree_out -> Branch("caloClus_innr_Y", & caloClus_innr_Y);
+    tree_out -> Branch("caloClus_innr_Z", & caloClus_innr_Z);
+    tree_out -> Branch("caloClus_innr_R", & caloClus_innr_R);
+    tree_out -> Branch("caloClus_innr_Phi", & caloClus_innr_Phi);
+    tree_out -> Branch("caloClus_innr_edep", & caloClus_innr_edep);
 
     // note : true vertex information from G4Particle 
     tree_out->Branch("NTruthVtx", &NTruthVtx_);
@@ -264,7 +309,17 @@ int tutorial::Init(PHCompositeNode *topNode)
     tree_out->Branch("CEMC_Hit_x", &_CEMC_Hit_x);
     tree_out->Branch("CEMC_Hit_y", &_CEMC_Hit_y);
     tree_out->Branch("CEMC_Hit_z", &_CEMC_Hit_z);
-    
+
+    // Primary particle truth hit on cemc 
+    tree_out->Branch("CEMC_Pr_Hit_x", &_CEMC_Pr_Hit_x);
+    tree_out->Branch("CEMC_Pr_Hit_y", &_CEMC_Pr_Hit_y);
+    tree_out->Branch("CEMC_Pr_Hit_z", &_CEMC_Pr_Hit_z);
+    tree_out->Branch("CEMC_Pr_Hit_R", &_CEMC_Pr_Hit_R);
+    tree_out->Branch("_CEMC_Pr_Hit_deltaT", &_CEMC_Pr_Hit_deltaT);
+
+    tree_out->Branch("PrG4_TTPRO_dD", &_PrG4_TTPRO_dD);
+    tree_out->Branch("PrG4_TTPRO_dR", &_PrG4_TTPRO_dR);
+    tree_out->Branch("PrG4_TTPRO_dphi", &_PrG4_TTPRO_dphi);
 
     return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -470,13 +525,16 @@ int tutorial::prepareTracker(PHCompositeNode * topNode)
 //        CLUSTER_CEMC (IO,RawClusterContainer)
 //        CLUSTER_POS_COR_CEMC (IO,RawClusterContainer)
 
-int tutorial::prepareEMCal(PHCompositeNode * topNode) {
-    geomEM = findNode::getClass <RawTowerGeomContainer> (topNode, "TOWERGEOM_CEMC");
+int tutorial::prepareEMCal(PHCompositeNode * topNode) 
+{
+    geomEM = findNode::getClass <RawTowerGeomContainer> (topNode, m_TowerGeomNodeName);
+
     EMCal_tower_sim_info = findNode::getClass <TowerInfoContainerv1> (topNode, "TOWERINFO_SIM_CEMC");
     EMCal_tower_sim = findNode::getClass <RawTowerContainer> (topNode, "TOWER_SIM_CEMC");
     EMCal_tower_calib = findNode::getClass <TowerInfoContainerv2> (topNode, emcal_node_name);
 
-    if (!EMCal_tower_calib) {
+    if (!EMCal_tower_calib) 
+    {
         std::cout << "tutorial::process_event Could not find node " << emcal_node_name << std::endl;
         exit(1);
     }
@@ -490,13 +548,14 @@ int tutorial::prepareEMCal(PHCompositeNode * topNode) {
         int phibin = EMCal_tower_calib -> getTowerPhiBin(key);
         // float time = EMCal_tower_calib->get_tower_at_channel(i)->get_time_float(); //get time
 
-        if (tower -> get_energy() <= 0) {continue;}
+        if (tower -> get_energy() <= 0.07) {continue;}
 
         const RawTowerDefs::keytype geomkey = RawTowerDefs::encode_towerid(RawTowerDefs::CalorimeterId::CEMC, etabin, phibin);
         RawTowerGeom * tower_geom = geomEM -> get_tower_geometry(geomkey); //encode tower geometry
         double EMCal_pos_x   = tower_geom -> get_center_x();
         double EMCal_pos_y   = tower_geom -> get_center_y();
         double EMCal_pos_z   = tower_geom -> get_center_z();
+        double EMCal_pos_R   = sqrt(EMCal_pos_x*EMCal_pos_x + EMCal_pos_y*EMCal_pos_y);
         double EMCal_pos_eta = tower_geom -> get_eta();
         double EMCal_pos_phi = tower_geom -> get_phi();
         double EMCal_energy  = tower -> get_energy();
@@ -505,12 +564,24 @@ int tutorial::prepareEMCal(PHCompositeNode * topNode) {
         tower_X.push_back(EMCal_pos_x);
         tower_Y.push_back(EMCal_pos_y);
         tower_Z.push_back(EMCal_pos_z);
+        tower_R.push_back(EMCal_pos_R);
         tower_Eta.push_back(EMCal_pos_eta);
         tower_Phi.push_back(EMCal_pos_phi);
         tower_Eta_bin.push_back(etabin);
         tower_Phi_bin.push_back(phibin);
         tower_edep.push_back(EMCal_energy);
+    
+        double EMCal_int_x   = tower_geom -> get_center_int_x();
+        double EMCal_int_y   = tower_geom -> get_center_int_y();
+        double EMCal_int_z   = tower_geom -> get_center_int_z();
+        double EMCal_int_R   = sqrt(EMCal_int_x*EMCal_int_x + EMCal_int_y*EMCal_int_y);
+
+        tower_int_X.push_back(EMCal_int_x);
+        tower_int_Y.push_back(EMCal_int_y);
+        tower_int_Z.push_back(EMCal_int_z);
+        tower_int_R.push_back(EMCal_int_R);
     }   
+
     return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -544,7 +615,7 @@ int tutorial::prepareiHCal(PHCompositeNode * topNode) {
         int etabin = iHCal_tower_calib -> getTowerEtaBin(key);
         int phibin = iHCal_tower_calib -> getTowerPhiBin(key);
         float time = iHCal_tower_calib->get_tower_at_channel(i)->get_time_float(); //get time
-        if (tower -> get_energy() <= 0) {continue;}
+        if (tower -> get_energy() <= 0.07) {continue;}
 
         const RawTowerDefs::keytype geomkey = RawTowerDefs::encode_towerid(RawTowerDefs::CalorimeterId::HCALIN, etabin, phibin);
         RawTowerGeom * tower_geom = geomIH -> get_tower_geometry(geomkey); //encode tower geometry
@@ -602,7 +673,7 @@ int tutorial::prepareoHCal(PHCompositeNode * topNode) {
         int etabin = oHCal_tower_calib -> getTowerEtaBin(key);
         int phibin = oHCal_tower_calib -> getTowerPhiBin(key);
 
-        if (tower -> get_energy() <= 0) {continue;}
+        if (tower -> get_energy() <= 0.07) {continue;}
 
         const RawTowerDefs::keytype geomkey = RawTowerDefs::encode_towerid(RawTowerDefs::CalorimeterId::HCALOUT, etabin, phibin);
         RawTowerGeom * tower_geom = geomOH -> get_tower_geometry(geomkey); //encode tower geometry
@@ -630,17 +701,22 @@ int tutorial::prepareoHCal(PHCompositeNode * topNode) {
 // === s === ChcKuma add Cal Clus ===============================================
 int tutorial::prepareEMCalClus(PHCompositeNode * topNode) {
     EMCal_cluster_cont = findNode::getClass <RawClusterContainer> (topNode, "CLUSTER_CEMC");
+    EMCal_cluster_innr = findNode::getClass <RawClusterContainer> (topNode, "CLUSTERINNER_CEMC");
 
     if (!EMCal_cluster_cont) {
         std::cout << "tutorial::process_event Could not find node " << emcalClus_node_name << std::endl;
         exit(1);
     }
+    if (!EMCal_cluster_innr) {
+        std::cout << "tutorial::process_event Could not find node " << emcalClus_inner_node_name << std::endl;
+        exit(1);
+    }
 
-    // note : EMCal
+    // note : EMCal clus center
     for (int i = 0; i < EMCal_cluster_cont -> size(); ++i) //loop over channels 
     {
         RawCluster * cluster = EMCal_cluster_cont  -> getCluster(i); //get EMCal tower
-        if (cluster -> get_energy() <= 0) {continue;}
+        if (cluster -> get_energy() <= 0.5) {continue;}
 
         double EMCal_pos_x   = cluster -> get_x();
         double EMCal_pos_y   = cluster -> get_y();
@@ -657,6 +733,29 @@ int tutorial::prepareEMCalClus(PHCompositeNode * topNode) {
         caloClus_Phi.push_back(EMCal_pos_phi);
         caloClus_edep.push_back(EMCal_energy);
     }   
+
+    // note : EMCal clus innerface center
+    for (int i = 0; i < EMCal_cluster_innr -> size(); ++i) //loop over channels 
+    {
+        RawCluster * cluster_innr = EMCal_cluster_innr  -> getCluster(i); //get EMCal tower
+        if (cluster_innr -> get_energy() <= 0.5) {continue;}
+
+        double EMCal_innr_x   = cluster_innr -> get_x();
+        double EMCal_innr_y   = cluster_innr -> get_y();
+        double EMCal_innr_z   = cluster_innr -> get_z();
+        double EMCal_innr_r   = cluster_innr -> get_r();
+        double EMCal_innr_phi = cluster_innr -> get_phi();
+        double EMCal_innr_energy  = cluster_innr -> get_energy();
+
+        caloClus_system.push_back(321);
+        caloClus_innr_X.push_back(EMCal_innr_x);
+        caloClus_innr_Y.push_back(EMCal_innr_y);
+        caloClus_innr_Z.push_back(EMCal_innr_z);
+        caloClus_innr_R.push_back(EMCal_innr_r);
+        caloClus_innr_Phi.push_back(EMCal_innr_phi);
+        caloClus_innr_edep.push_back(EMCal_innr_energy);
+    }
+
     return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -673,7 +772,7 @@ int tutorial::prepareiHCalClus(PHCompositeNode * topNode) {
     for (int i = 0; i < iHCal_cluster_cont -> size(); ++i) //loop over channels 
     {
         RawCluster * cluster = iHCal_cluster_cont  -> getCluster(i); //get EMCal tower
-        if (cluster -> get_energy() <= 0) {continue;}
+        if (cluster -> get_energy() <= 0.5) {continue;}
 
         double iHCal_pos_x   = cluster -> get_x();
         double iHCal_pos_y   = cluster -> get_y();
@@ -706,7 +805,7 @@ int tutorial::prepareoHCalClus(PHCompositeNode * topNode) {
     for (int i = 0; i < oHCal_cluster_cont -> size(); ++i) //loop over channels 
     {
         RawCluster * cluster = oHCal_cluster_cont  -> getCluster(i); //get EMCal tower
-        if (cluster -> get_energy() <= 0) {continue;}
+        if (cluster -> get_energy() <= 0.5) {continue;}
 
         double oHCal_pos_x   = cluster -> get_x();
         double oHCal_pos_y   = cluster -> get_y();
@@ -727,8 +826,6 @@ int tutorial::prepareoHCalClus(PHCompositeNode * topNode) {
 }
 
 // === e === ChcKuma add Cal Clus ===============================================
-
-
 
 int tutorial::prepareG4Turth(PHCompositeNode * topNode){
     std::cout << "Get PHG4 info.: truth primary vertex" << std::endl;
@@ -796,6 +893,11 @@ int tutorial::prepareG4Turth(PHCompositeNode * topNode){
             PrimaryG4P_Charge_.push_back(charge);
             PrimaryG4P_isChargeHadron_.push_back(isChargeHadron);
 
+            // 找到pr electron track id
+            if (abs(ptcl->get_pid()) == 11)  // 电子的 PDG ID 是 ±11
+            {
+                primary_electron_tracks.insert(ptcl->get_track_id());
+            }
         }
     }
     NPrimaryG4P_ = PrimaryG4P_PID_.size();
@@ -804,16 +906,23 @@ int tutorial::prepareG4Turth(PHCompositeNode * topNode){
     return Fun4AllReturnCodes::EVENT_OK;
 }
 
-
 // -------------------------------------------------------------------------------------------------------------------------- 
 int tutorial::prepareG4HIT(PHCompositeNode * topNode)
 {
+    if (primary_electron_tracks.empty())
+    {
+        std::cout << "No primary electrons found in this event!" << std::endl;
+        return 0;
+    }
+
     hits_CEMC = findNode::getClass<PHG4HitContainer>(topNode, "G4HIT_CEMC");
     if(!hits_CEMC)
     {
       std::cout << "PhotonEMC::process_event: G4HIT_CEMC not found!!!" << std::endl;
     }
 
+    int prhit0 = 0;
+    double t_earlist = 0.;
     PHG4HitContainer::ConstRange hit_range = hits_CEMC->getHits();
     for (PHG4HitContainer::ConstIterator hit_iter = hit_range.first; hit_iter != hit_range.second; hit_iter++)
     {
@@ -825,30 +934,156 @@ int tutorial::prepareG4HIT(PHCompositeNode * topNode)
         float y = hit_iter->second->get_y(0);
         float z = hit_iter->second->get_z(0);
         
-        int trkid = hit_iter->second->get_trkid();
-        PHG4Particle *part = truthinfo->GetParticle(trkid);
-        v4.SetPxPyPzE(part->get_px(), part->get_py(), part->get_pz(), part->get_e());
-        int pid = part->get_pid();
-        _CEMC_Hit_pid.push_back(pid);
+        // int trkid = hit_iter->second->get_trkid();
+        // PHG4Particle *part = truthinfo->GetParticle(trkid);
+        // v4.SetPxPyPzE(part->get_px(), part->get_py(), part->get_pz(), part->get_e());
+        // int pid = part->get_pid();
+        // _CEMC_Hit_pid.push_back(pid);
 
-        int vtxid = part->get_vtx_id();
-        PHG4VtxPoint *vtx = truthinfo->GetVtx(vtxid);
+        // int vtxid = part->get_vtx_id();
+        // PHG4VtxPoint *vtx = truthinfo->GetVtx(vtxid);
 
-        // add trkid to a set
-        _CEMC_Hit_Evis.push_back(light_yield);
-        _CEMC_Hit_Edep.push_back(edep);
-        _CEMC_Hit_ch.push_back(ch);
-        _CEMC_Hit_x.push_back(x);
-        _CEMC_Hit_y.push_back(y);
-        _CEMC_Hit_z.push_back(z);
+        // // add trkid to a set
+        // _CEMC_Hit_Evis.push_back(light_yield);
+        // _CEMC_Hit_Edep.push_back(edep);
+        // _CEMC_Hit_ch.push_back(ch);
+        // _CEMC_Hit_x.push_back(x);
+        // _CEMC_Hit_y.push_back(y);
+        // _CEMC_Hit_z.push_back(z);
 
         // _CEMC_Hit_particle_x.push_back(vtx->get_x());
         // _CEMC_Hit_particle_y.push_back(vtx->get_y());
         // _CEMC_Hit_particle_z.push_back(vtx->get_z());
+
+        // get primary electron hits on emcal
+        int track_id = this_hit->get_trkid();
+        // if (primary_electron_tracks.find(track_id) == primary_electron_tracks.end()) continue;
+
+        // 只选择初级电子的 G4Hit，忽略由 shower 产生的次级粒子
+        if (primary_electron_tracks.find(track_id) != primary_electron_tracks.end())
+        {
+            prhit0 += 1;
+
+            double x0 = this_hit->get_x(0);  // 入口 x
+            double y0 = this_hit->get_y(0);  // 入口 y
+            double z0 = this_hit->get_z(0);  // 入口 z
+            double t0 = this_hit->get_t(0);  // 时间
+
+            double r0 = sqrt(x0*x0 + y0*y0);
+
+            // std::cout << "Primary electron hit0 EMCal at: (x0=" << x0
+            //           << ", y0=" << y0 << ", z0=" << z0 << ", t0=" << t0 << ", r0="<< r0 << " )" << std::endl;
+
+            double x1 = this_hit->get_x(1);  // 出口 x
+            double y1 = this_hit->get_y(1);  // 出口 y
+            double z1 = this_hit->get_z(1);  // 出口 z
+            double t1 = this_hit->get_t(1);  // 时间
+          
+            // std::cout << "Primary electron hit1 EMCal at: (x1=" << x1
+            //           << ", y1=" << y1 << ", z1=" << z1 << ", t1=" << t1 << ")" << std::endl;
+
+            double delta_t = t0 - t_earlist;
+
+            if (prhit0 == 1) 
+            {
+                t_earlist = t0;
+
+                _CEMC_Pr_Hit_x.push_back(x0);
+                _CEMC_Pr_Hit_y.push_back(y0);
+                _CEMC_Pr_Hit_z.push_back(z0);
+                _CEMC_Pr_Hit_R.push_back(r0);
+
+                double PtG_x = x0; 
+                double PtG_y = y0; 
+                double PtG_r = r0;  
+                double PtG_phi = atan2(PtG_y, PtG_x); 
+                double PtG_z = z0; 
+
+                // std::cout << "PrG at EMCal surface: (x=" << PtG_x
+                //           << ", y=" << PtG_y << ", r=" << PtG_r << ", phi=" << PtG_phi
+                //           << ", z=" << PtG_z << ")" << std::endl;
+            }
+            _CEMC_Pr_Hit_deltaT.push_back(delta_t);
+
+        }
     }
 
     return Fun4AllReturnCodes::EVENT_OK;
 }
+
+int tutorial::createTracksFromTruth(PHCompositeNode* topNode)
+{
+    // 获取或创建 SvtxTrackMap 节点
+    SvtxTrackMap* trackmap = findNode::getClass<SvtxTrackMap>(topNode, "SvtxTrackMap");
+    if (!trackmap)
+    {
+        trackmap = new SvtxTrackMap_v1();
+        PHNodeIterator iter(topNode);
+        PHCompositeNode* dstNode = dynamic_cast<PHCompositeNode*>(iter.findFirst("PHCompositeNode", "DST"));
+
+        PHIODataNode<PHObject> *truthtracknode = new PHIODataNode<PHObject>(trackmap, "SvtxTrackMap", "PHObject");
+        dstNode->addNode(truthtracknode);
+    }
+
+    const auto prange = m_truth_info->GetPrimaryParticleRange();
+    for (auto iter = prange.first; iter != prange.second; ++iter)
+    {
+        PHG4Particle* ptcl = iter->second;
+        if (!ptcl) continue;
+
+        TLorentzVector p;
+        p.SetPxPyPzE(ptcl->get_px(), ptcl->get_py(), ptcl->get_pz(), ptcl->get_e());
+
+        SvtxTrack_v2* track = new SvtxTrack_v2();
+        track->set_id(trackmap->size());
+        track->set_px(ptcl->get_px());
+        track->set_py(ptcl->get_py());
+        track->set_pz(ptcl->get_pz());
+        track->set_charge(static_cast<int>(TDatabasePDG::Instance()->GetParticle(ptcl->get_pid())->Charge()));
+        track->set_chisq(1.0);
+        track->set_ndf(1);
+        track->set_vertex_id(0);  // 可改为对应 vtx id
+
+        trackmap->insert(track);
+    }
+
+    return Fun4AllReturnCodes::EVENT_OK;
+}
+
+int tutorial::prepareTruthTrack(PHCompositeNode * topNode) 
+{
+    trackMap = findNode::getClass<SvtxTrackMap>(topNode, "SvtxTrackMap");
+    if(!trackMap)
+    {
+      std::cout << "TrackCaloMatch::process_event not found! Aborting!" << std::endl;
+      return Fun4AllReturnCodes::ABORTEVENT;
+    }
+
+    for (auto &iter : *trackMap)
+    {
+        truth_track = iter.second;
+        
+        double truth_tk_pt = truth_track->get_pt();
+        std::cout<< "Truth track pt: " << truth_tk_pt << std::endl;
+
+        thisState = truth_track->get_state(99);
+        double em_x = thisState->get_x();
+        double em_y = thisState->get_y();
+        double em_r = sqrt(em_x*em_x + em_y*em_y);
+        double em_phi = thisState->get_phi();
+        double em_z = thisState->get_z();
+        // std::cout << "Truth track state at EMCal: (x=" << em_x
+        //           << ", y=" << em_y << ", r=" << em_r << ", phi=" << em_phi
+        //           << ", z=" << em_z << ")" << std::endl;
+
+        _PrG4_TTPRO_dD.push_back(sqrt((em_x-_CEMC_Pr_Hit_x[0])*(em_x-_CEMC_Pr_Hit_x[0])+(em_y-_CEMC_Pr_Hit_y[0])*(em_y-_CEMC_Pr_Hit_y[0]))); // 计算与初级电子的距离差
+        _PrG4_TTPRO_dR.push_back(em_r-_CEMC_Pr_Hit_R[0]);
+        _PrG4_TTPRO_dphi.push_back(em_phi-atan2(_CEMC_Pr_Hit_y[0], _CEMC_Pr_Hit_x[0])); // 计算与初级电子的角度差
+    }
+
+    return Fun4AllReturnCodes::EVENT_OK;
+}
+
 
 //____________________________________________________________________________..
 int tutorial::process_event(PHCompositeNode * topNode) {
@@ -863,6 +1098,10 @@ int tutorial::process_event(PHCompositeNode * topNode) {
     
     prepareG4Turth(topNode);
     prepareG4HIT(topNode);
+
+    prepareTruthTrack(topNode);
+
+    // createTracksFromTruth(topNode);
 
     nTowers = tower_system.size();
     
@@ -893,6 +1132,7 @@ int tutorial::ResetEvent(PHCompositeNode *topNode)
     tower_X.clear();
     tower_Y.clear();
     tower_Z.clear();
+    tower_R.clear();
     tower_Eta.clear();
     tower_Phi.clear();
     tower_Eta_test.clear();
@@ -900,6 +1140,11 @@ int tutorial::ResetEvent(PHCompositeNode *topNode)
     tower_Eta_bin.clear();
     tower_Phi_bin.clear();
     tower_edep.clear();
+
+    tower_int_X.clear();
+    tower_int_Y.clear();
+    tower_int_Z.clear();
+    tower_int_R.clear();
 
     nCaloClus = 0;
     caloClus_system.clear();
@@ -909,6 +1154,13 @@ int tutorial::ResetEvent(PHCompositeNode *topNode)
     caloClus_R.clear();
     caloClus_Phi.clear();
     caloClus_edep.clear();
+
+    caloClus_innr_X.clear();
+    caloClus_innr_Y.clear();
+    caloClus_innr_Z.clear();
+    caloClus_innr_R.clear();
+    caloClus_innr_Phi.clear();
+    caloClus_innr_edep.clear();
 
     // note : Truth primary vertex information
     TruthPV_trig_x_ = -999;
@@ -935,8 +1187,83 @@ int tutorial::ResetEvent(PHCompositeNode *topNode)
     _CEMC_Hit_y.clear();
     _CEMC_Hit_z.clear();
 
+    _CEMC_Pr_Hit_x.clear();
+    _CEMC_Pr_Hit_y.clear();
+    _CEMC_Pr_Hit_z.clear();
+    _CEMC_Pr_Hit_R.clear();
+    _CEMC_Pr_Hit_deltaT.clear();
+
+    primary_electron_tracks.clear();
 
     eventID += 1;
+
+
+    // 2. 再对所有 vector 进行 shrink_to_fit 操作，释放多余内存
+    clus_system.shrink_to_fit();
+    clus_layer.shrink_to_fit();
+    clus_adc.shrink_to_fit();
+    clus_X.shrink_to_fit();
+    clus_Y.shrink_to_fit();
+    clus_Z.shrink_to_fit();
+    clus_size.shrink_to_fit();
+    clus_phi_size.shrink_to_fit();
+    clus_z_size.shrink_to_fit();
+
+    tower_system.shrink_to_fit();
+    tower_X.shrink_to_fit();
+    tower_Y.shrink_to_fit();
+    tower_Z.shrink_to_fit();
+    tower_R.shrink_to_fit();
+    tower_Eta.shrink_to_fit();
+    tower_Phi.shrink_to_fit();
+    tower_Eta_test.shrink_to_fit();
+    tower_Phi_test.shrink_to_fit();
+    tower_Eta_bin.shrink_to_fit();
+    tower_Phi_bin.shrink_to_fit();
+    tower_edep.shrink_to_fit();
+
+    tower_int_X.shrink_to_fit();
+    tower_int_Y.shrink_to_fit();
+    tower_int_Z.shrink_to_fit();
+    tower_int_R.shrink_to_fit();
+
+    caloClus_system.shrink_to_fit();
+    caloClus_X.shrink_to_fit();
+    caloClus_Y.shrink_to_fit();
+    caloClus_Z.shrink_to_fit();
+    caloClus_R.shrink_to_fit();
+    caloClus_Phi.shrink_to_fit();
+    caloClus_edep.shrink_to_fit();
+
+    caloClus_innr_X.shrink_to_fit();
+    caloClus_innr_Y.shrink_to_fit();
+    caloClus_innr_Z.shrink_to_fit();
+    caloClus_innr_R.shrink_to_fit();
+    caloClus_innr_Phi.shrink_to_fit();
+    caloClus_innr_edep.shrink_to_fit();
+
+    PrimaryG4P_Pt_.shrink_to_fit();
+    PrimaryG4P_Eta_.shrink_to_fit();
+    PrimaryG4P_Phi_.shrink_to_fit();
+    PrimaryG4P_E_.shrink_to_fit();
+    PrimaryG4P_PID_.shrink_to_fit();
+    PrimaryG4P_ParticleClass_.shrink_to_fit();
+    PrimaryG4P_isStable_.shrink_to_fit();
+    PrimaryG4P_Charge_.shrink_to_fit();
+    PrimaryG4P_isChargeHadron_.shrink_to_fit();
+
+    _CEMC_Hit_Evis.shrink_to_fit();
+    _CEMC_Hit_Edep.shrink_to_fit();
+    _CEMC_Hit_ch.shrink_to_fit();
+    _CEMC_Hit_x.shrink_to_fit();
+    _CEMC_Hit_y.shrink_to_fit();
+    _CEMC_Hit_z.shrink_to_fit();
+
+    _CEMC_Pr_Hit_x.shrink_to_fit();
+    _CEMC_Pr_Hit_y.shrink_to_fit();
+    _CEMC_Pr_Hit_z.shrink_to_fit();
+    _CEMC_Pr_Hit_R.shrink_to_fit();
+    _CEMC_Pr_Hit_deltaT.shrink_to_fit();
 
     return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -975,4 +1302,12 @@ int tutorial::Reset(PHCompositeNode *topNode)
 void tutorial::Print(const std::string &what) const
 {
   std::cout << "tutorial::Print(const std::string &what) const Printing info for " << what << std::endl;
+}
+
+
+
+//____________________________________________________________________________..
+bool tutorial::checkTrack(SvtxTrack* track)
+{
+    return true;
 }

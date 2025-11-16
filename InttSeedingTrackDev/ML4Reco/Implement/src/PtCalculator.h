@@ -33,35 +33,35 @@ enum class Method
 // Formula method input struct
 struct InputEMD 
 {
-    float EMD_Angle = 0.f;
-    float EMD_Eta = 0.f;
-    float EMD_Radius = 0.f;
+    float EMD_Angle = 0.f; // delta_phi - EM Deflection angle in rad is between two vectors, one vector connect inner INTT and outer INTT,  another one connect outer INTT and Calo cluster
+    float EMD_Eta = 0.f; // track eta
+    float EMD_Radius = 0.f; // EMCal Cluster radius in cm
 };
 
 struct InputEproj 
 {
-    float Energy_Calo = 0.f;
-    float Radius_Calo = 0.f;
-    float Z_Calo = 0.f;
-    float Radius_vertex = 0.f;
-    float Z_vertex = 0.f;
+    float Energy_Calo = 0.f; // EMCal Cluster energy in GeV
+    float Radius_Calo = 0.f; // EMCal Cluster radius in cm
+    float Z_Calo = 0.f; // EMCal Cluster z in cm
+    float Radius_vertex = 0.f; // Vertex radius in cm
+    float Z_vertex = 0.f; // Vertex z in cm
 };
 
 // ML Model input struct, using vector is convenient for ONNX, length and order must be consistent with training
 // Defination of length and order is in the tutorial file PtCalcMLTutorial.C
 struct InputMLEMD 
 {
-    std::vector<float> features; 
+    std::vector<float> features; // 2-d features:{ 1/dphi_EMD, eta_track}
 };
 
 struct InputMLEproj 
 {
-    std::vector<float> features;
+    std::vector<float> features; // 7-d input features:{ INTT 3/4 layer R, INTT 3/4 layer Z, INTT 5/4 layer R, INTT 5/4 layer Z, Calo cluster R, Calo cluster Z, Calo cluster Energy }
 };
 
 struct InputMLCombined 
 {
-    std::vector<float> features;
+    std::vector<float> features; // 2-d features:{pT reconstuct with deflection information, pT reconstuct with Calo energy information}
 };
 
 // consistent input variant for all methods
@@ -82,6 +82,21 @@ struct PtCalculatorConfig
 // PtCalculator MAIN CLASS 
 class PtCalculator {
 public:
+    // Main Function. general func. for Pt calculation, dispatching according to method
+    PtResult ComputePt(Method method, const AnyInput& input) const;
+
+    // independent interfaces for finer control
+    PtResult ComputeEMD(const InputEMD& in) const; // using electromagnetic deflection to calculate pT by analytic formula pT = C_eta × |Δφ|^(Power)
+    PtResult ComputeEproj(const InputEproj& in) const; // project the Calo cluster energy to XY-plane to get pT by analytic formula pT = Energy_Calo × (ΔR / Distance) 
+    PtResult ComputeMLEMD(const InputMLEMD& in) const; // machine learning model trained for the EMD method, the features are 2-d features: { 1/dphi_EMD, eta_track} please setting the eta_track = 0, cause I just add the dimension but not trained with the eta data now
+    PtResult ComputeMLEproj(const InputMLEproj& in) const; // machine learning model trained for the Eproj method, the features are 7-d input features:{ INTT 3/4 layer R, INTT 3/4 layer Z, INTT 5/4 layer R, INTT 5/4 layer Z, Calo R, Calo Z, Calo Energy }
+    PtResult ComputeMLCombined(const InputMLCombined& in) const; // machine learning model trained to combine the pT estimates obtained from two different methods based on two independent sets of information {deflection, energy}; the final combined pT is given by pT = w1 * pT(deflection) + w2 * pT(energy), where the weights w1 and w2 are predicted by the model for deflection and energy
+
+    // EMD formula parameters setters
+    void setParCeta(float v)  { m_par_Ceta = v; }
+    void setParPower(float v) { m_par_Power = v; }
+
+    // member functions
     PtCalculator() = default;
     explicit PtCalculator(const PtCalculatorConfig& cfg);
 
@@ -90,16 +105,6 @@ public:
 
     // initialize (load models and scalers for ML methods)
     bool init(std::string* err = nullptr);
-
-    // general func. for Pt calculation, dispatching according to method
-    PtResult ComputePt(Method method, const AnyInput& input) const;
-
-    // independent interfaces for finer control
-    PtResult ComputeEMD(const InputEMD& in) const;
-    PtResult ComputeEproj(const InputEproj& in) const;
-    PtResult ComputeMLEMD(const InputMLEMD& in) const;
-    PtResult ComputeMLEproj(const InputMLEproj& in) const;
-    PtResult ComputeMLCombined(const InputMLCombined& in) const;
 
     // load ML infer, output is pt
     using InferFn = std::function<float(const std::vector<float>&)>;
@@ -111,10 +116,6 @@ public:
     void setMLEMDStandardizer(std::vector<float> mean, std::vector<float> scale);
     void setMLEprojStandardizer(std::vector<float> mean, std::vector<float> scale);
     void setMLCombinedStandardizer(std::vector<float> mean, std::vector<float> scale);
-
-    // EMD formula parameters setters
-    void setParCeta(float v)  { m_par_Ceta = v; }
-    void setParPower(float v) { m_par_Power = v; }
 
 private:
     static void applyStandardize(std::vector<float>& x,

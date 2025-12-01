@@ -13,7 +13,7 @@ ORT_LIBDIR  = $(ORT_PREFIX)/lib
 # JSON 单头文件目录（可不设，如果系统自带）
 JSON_INC ?=
 
-# 是否启用 ONNX（源码需配合宏，见下）
+# 是否启用 ONNX（源码需配合宏，见下）1
 WITH_ONNX ?= 1
 
 # === Targets ===

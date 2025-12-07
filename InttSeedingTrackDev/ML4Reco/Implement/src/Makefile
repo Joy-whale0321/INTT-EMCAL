@@ -6,12 +6,14 @@ OPTFLAGS  = -O2
 PIC       = -fPIC
 
 # === ONNX Runtime (可覆盖) ===
-ORT_PREFIX ?= /sphenix/u/jzhang1/opt/onnxruntime
+# ORT_PREFIX ?= /sphenix/u/jzhang1/opt/onnxruntime
+ORT_PREFIX ?= $(OFFLINE_MAIN)
 ORT_INC     = $(ORT_PREFIX)/include
 ORT_LIBDIR  = $(ORT_PREFIX)/lib
 
 # JSON 单头文件目录（可不设，如果系统自带）
-JSON_INC ?= /sphenix/u/jzhang1/opt/nlohmann/include
+# JSON_INC ?= /sphenix/u/jzhang1/opt/nlohmann/include
+JSON_INC ?= $(OFFLINE_MAIN)/include
 
 # 是否启用 ONNX（源码需配合宏，见下）1
 WITH_ONNX ?= 1

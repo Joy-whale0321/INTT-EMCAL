@@ -143,8 +143,8 @@ private:
     std::vector<float> m_mlCombined_mean, m_mlCombined_scale;
 
     // EMD formula parameters
-    float m_par_Ceta = 0.2;
-    float m_par_Power = -1.0;
+    mutable float m_par_Ceta = 0.2;
+    mutable float m_par_Power = -1.0;
 
     bool consider_eta_dependence_on_EMDcompute = true;
 

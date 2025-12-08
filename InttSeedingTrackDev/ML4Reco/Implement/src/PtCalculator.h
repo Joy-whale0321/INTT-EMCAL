@@ -145,6 +145,11 @@ private:
     // EMD formula parameters
     float m_par_Ceta = 0.2;
     float m_par_Power = -1.0;
+
+    bool consider_eta_dependence_on_EMDcompute = true;
+
+    bool charge_of_track_is_negative = false;
+    bool charge_of_track_is_positive = false;
 };
 
 } // namespace SiCaloPt

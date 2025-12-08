@@ -130,7 +130,7 @@ PtResult PtCalculator::ComputeEMD(const InputEMD& in) const
     // whethear considering the eta dependence on EMD compute
     if (consider_eta_dependence_on_EMDcompute)
     {
-        x_eta = in.EMD_Eta;
+        float x_eta = in.EMD_Eta;
         m_par_Ceta = 0.198211 + (0.013064*x_eta*x_eta) + (-0.009812*x_eta*x_eta*x_eta*x_eta); // Function to calculate the correct factor of eta
         m_par_Power = -1.0;
     }  

@@ -3,7 +3,9 @@
 #include <iostream>
 #include <vector>
 
+// #include "PtCalculator.h"  // SiCaloPt::PtCalculator & friends
 #include "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/PtCalculator.h"  // SiCaloPt::PtCalculator & friends
+R__LOAD_LIBRARY(/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so)
 
 // ---- Weights(onnx) and Scalers(json) Path ---------------------------
 struct DemoPaths
@@ -31,7 +33,7 @@ void PtCalcMLTutorial()
 {
     // Load PtCalc shared library
     // gSystem->Load("libPtCalc.so");
-    gSystem->Load("/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so");
+    // gSystem->Load("/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so");
 
     // Use appropriate paths in your environment, the default "DemoPaths" setup is correct here for mine
     DemoPaths WS_Path;  

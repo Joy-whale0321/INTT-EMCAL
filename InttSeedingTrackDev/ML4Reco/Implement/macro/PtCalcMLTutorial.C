@@ -30,8 +30,8 @@ Opt make_opt(const std::string& s)
 void PtCalcMLTutorial()
 {
     // Load PtCalc shared library
-    gSystem->Load("libPtCalc.so");
-    // gSystem->Load("/sphenix/u/jzhang1/install/lib/libPtCalc.so");
+    // gSystem->Load("libPtCalc.so");
+    gSystem->Load("/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so");
 
     // Use appropriate paths in your environment, the default "DemoPaths" setup is correct here for mine
     DemoPaths WS_Path;  

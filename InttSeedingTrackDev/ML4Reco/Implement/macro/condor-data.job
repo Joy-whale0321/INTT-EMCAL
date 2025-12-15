@@ -38,18 +38,16 @@ Rank=CPU_Speed
 
 # Used to give jobs a directory with respect to file input 
 # and output.
-Initialdir     = /sphenix/user/jzhang1/HFsemiClassifier/HF_PY/Generate
+Initialdir     = /sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/macro
 
 # The executable we want to run.
-Executable     = $(Initialdir)/run_ppHF.sh
+Executable     = $(Initialdir)/testcode.sh
 
-nEvents        = 10000000
-PYSet          = ppHF.cmnd
-outName        = ppHF_eXDecay_10M_$(Process).root
+nEvents        = 1
 
 # The argument to pass to the executable.
 #tracking firt then calo, only one tracking file
-Arguments      = "$(nEvents) $(PYSet) $(outName) $(Process)" 
+Arguments      = "$(nEvents) $(Process)" 
 
 # The job's stdout is sent to this file.
 Output         = $(Initialdir)/log/job-Data-$(Process).out

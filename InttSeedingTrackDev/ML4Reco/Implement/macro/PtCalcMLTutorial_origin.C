@@ -4,21 +4,40 @@
 #include <vector>
 
 // #include "PtCalculator.h"  // SiCaloPt::PtCalculator & friends
-#include "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/PtCalculator.h"  // SiCaloPt::PtCalculator & friends
-R__LOAD_LIBRARY(/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so)
+// #include "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/PtCalculator.h"  // SiCaloPt::PtCalculator
+#include "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/PtCalculator.h"  // SiCaloPt::PtCalculator
+
+// R__LOAD_LIBRARY(/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so)
+R__LOAD_LIBRARY(/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so)
 
 // ---- Weights(onnx) and Scalers(json) Path ---------------------------
+// struct DemoPaths
+// {
+//     std::string emd_onnx          = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD.onnx"; 
+//     std::string emd_scaler_json   = "";
+
+//     std::string eproj_onnx        = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEproj.onnx"; 
+//     std::string eproj_scaler_json = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEproj.json"; 
+
+//     std::string combined_onnx         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLCombined.onnx"; 
+//     std::string combined_scaler_json  = "";
+// };
+
 struct DemoPaths
 {
-    std::string emd_onnx          = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD.onnx"; 
+    std::string emd_onnx          = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD.onnx"; 
     std::string emd_scaler_json   = "";
 
-    std::string eproj_onnx        = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEproj.onnx"; 
-    std::string eproj_scaler_json = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEproj.json"; 
+    // std::string eproj_onnx        = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEproj.onnx"; 
+    // std::string eproj_scaler_json = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEproj.json"; 
 
-    std::string combined_onnx         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLCombined.onnx"; 
+    std::string eproj_onnx        = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version3/model_weight/model_MLEproj.onnx"; 
+    std::string eproj_scaler_json = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version3/model_weight/scaler_MLEproj.json"; 
+
+    std::string combined_onnx         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLCombined.onnx"; 
     std::string combined_scaler_json  = "";
 };
+
 
 // ---- turn string into optional<string> for Config ------------------------
 template<typename Opt>
@@ -78,9 +97,9 @@ void PtCalcMLTutorial()
     // ======================== Eproj Formula ==========================
     {
         SiCaloPt::InputEproj in;
-        in.Energy_Calo   = 1.8;   // EMCal Cluster energy in GeV
-        in.Radius_Calo   = 93.5;  // EMCal Cluster radius in cm
-        in.Z_Calo        = 0.0;   // EMCal Cluster z in cm
+        in.Energy_Calo   = 8.0;   // EMCal Cluster energy in GeV
+        in.Radius_Calo   = 100.0;  // EMCal Cluster radius in cm
+        in.Z_Calo        = 50.0;   // EMCal Cluster z in cm
         in.Radius_vertex = 0.0;   // Vertex radius in cm
         in.Z_vertex      = 0.0;   // Vertex z in cm
 
@@ -105,8 +124,8 @@ void PtCalcMLTutorial()
     // ====== ML：MLEproj (7-d input: INTT 3/4 layer R,Z, INTT 5/4 layer R,Z, Calo R,Z,Energy) ======
     {
         // 7-d input features:{ INTT 3/4 layer R, INTT 3/4 layer Z, INTT 5/4 layer R, INTT 5/4 layer Z, Calo R, Calo Z, Calo Energy }
-        std::vector<float> featsMLEproj = { 10.0,  5.0,   // INTT 3/4 layer
-                                            15.0,  7.5,   // INTT 5/4 layer
+        std::vector<float> featsMLEproj = { 2.0,   1.0,   // INTT 3/4 layer
+                                            10.0,   5.0,   // INTT 5/4 layer
                                             100.0, 50.0, 8.0 }; // Calo R,Z,Energy
 
         SiCaloPt::InputMLEproj in{featsMLEproj};

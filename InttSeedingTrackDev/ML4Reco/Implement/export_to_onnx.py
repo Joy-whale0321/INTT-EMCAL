@@ -18,16 +18,32 @@ Examples:
         --model-dir   /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version2 \
         --weights     /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version2/model_weight/best_model_pt_0.0_10.0_INTT_CaloIwoE.pt \
         --scaler      /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version2/model_weight/scaler_pt_0.0_10.0_INTT_CaloIwoE.pkl \
-        --out         /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD.onnx \
-        --json        /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEMD.json \
+        --out         /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEproj.onnx \
+        --json        /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEproj.json \
         --in-dim 7
+
+    python export_to_onnx.py \
+        --model-dir   /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version3 \
+        --weights     /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version3/model_weight/best_model_Eproj.pt \
+        --scaler      /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version3/model_weight/scaler_Eproj.pkl \
+        --out         /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version3/model_weight/model_MLEproj.onnx \
+        --json        /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version3/model_weight/scaler_MLEproj.json \
+        --in-dim 3
 
     python export_to_onnx.py \
         --model-dir   /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version4 \
         --weights     /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version4/model_weight/best_model_pt_0.0_10.0_INTT_CaloIwoE.pt \
         --scaler      /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version4/ML_Weight_Scaler/scaler_identity.pkl \
-        --out         /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEproj.onnx \
-        --json        /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEproj.json \
+        --out         /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD.onnx \
+        --json        /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEMD.json \
+        --in-dim 2
+
+    python export_to_onnx.py \
+        --model-dir   /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version5 \
+        --weights     /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version5/model_weight/best_model_pt_0.0_10.0_pP_scenario+10.pt \
+        --scaler      /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version5/ML_Weight_Scaler/scaler_identity.pkl \
+        --out         /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_pP_s+10.onnx \
+        --json        /mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEMD.json \
         --in-dim 2
 
     python export_to_onnx.py \
@@ -62,8 +78,8 @@ def main():
     ap.add_argument("--json",      required=True, help="Absolute path to output scaler.json")
     ap.add_argument("--in-dim",    type=int, default=7, help="Input feature dimension (default 7)")
     ap.add_argument("--hidden-dim",type=int, default=256, help="Hidden size, if customized")
-    # ap.add_argument("--class-name",default="TrackCaloRegressor", help="Model class name in model.py")
-    ap.add_argument("--class-name",default="FusionRegressor", help="Model class name in model.py")
+    ap.add_argument("--class-name",default="TrackCaloRegressor", help="Model class name in model.py")
+    # ap.add_argument("--class-name",default="FusionRegressor", help="Model class name in model.py")
     args = ap.parse_args()
 
     # Resolve and validate paths
@@ -84,8 +100,8 @@ def main():
     # Now import the model class dynamically
     try:
         import importlib
-        # model_module = importlib.import_module("model")
-        model_module = importlib.import_module("model_combined")
+        model_module = importlib.import_module("model")
+        # model_module = importlib.import_module("model_combined")
         ModelClass = getattr(model_module, args.class_name)
     except Exception as e:
         print(f"[ERROR] Failed to import '{args.class_name}' from {model_dir}/model.py: {e}", file=sys.stderr)

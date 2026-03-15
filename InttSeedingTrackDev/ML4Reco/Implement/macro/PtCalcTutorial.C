@@ -103,9 +103,9 @@ void PtCalcMLTutorial()
     // ====== ML：MLEproj (7-d input: INTT 3/4 layer R,Z, INTT 5/4 layer R,Z, Calo R,Z,Energy) ======
     {
         // 7-d input features:{ INTT 3/4 layer R, INTT 3/4 layer Z, INTT 5/4 layer R, INTT 5/4 layer Z, Calo R, Calo Z, Calo Energy }
-        std::vector<float> featsMLEproj = { 10.0,  5.0,   // INTT 3/4 layer
-                                            15.0,  7.5,   // INTT 5/4 layer
-                                            100.0, 50.0, 8.0 }; // Calo R,Z,Energy
+        std::vector<float> featsMLEproj = { 15.0,  7.5,   // INTT 3/4 layer
+                                            20.0,  10.0,   // INTT 5/4 layer
+                                            90.0,  45.0, 8.0 }; // Calo R,Z,Energy
 
         SiCaloPt::InputMLEproj in{featsMLEproj};
         auto r = calcTutorial.ComputePt(SiCaloPt::Method::MethodMLEproj, SiCaloPt::AnyInput{in});

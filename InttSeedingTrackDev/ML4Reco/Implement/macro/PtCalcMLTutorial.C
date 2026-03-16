@@ -4,69 +4,69 @@
 #include <vector>
 
 // #include "PtCalculator.h"  // SiCaloPt::PtCalculator & friends
-// #include "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/PtCalculator.h"  // SiCaloPt::PtCalculator
-#include "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/PtCalculator.h"  // SiCaloPt::PtCalculator
+#include "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/PtCalculator.h"  // SiCaloPt::PtCalculator
+// #include "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/PtCalculator.h"  // SiCaloPt::PtCalculator
 
-// R__LOAD_LIBRARY(/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so)
-R__LOAD_LIBRARY(/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so)
+R__LOAD_LIBRARY(/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so)
+// R__LOAD_LIBRARY(/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/src/libPtCalc.so)
 
 
 // ---- Weights(onnx) and Scalers(json) Path on rcf ---------------------------
-// struct DemoPaths
-// {
-//     std::string emd_onnx_m10         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s-10.onnx"; 
-//     std::string emd_scaler_json_m10  = "";
+struct DemoPaths
+{
+    std::string emd_onnx_m10         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s-10.onnx"; 
+    std::string emd_scaler_json_m10  = "";
 
-//     std::string emd_onnx_m11         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s-11.onnx"; 
-//     std::string emd_scaler_json_m11  = "";
+    std::string emd_onnx_m11         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s-11.onnx"; 
+    std::string emd_scaler_json_m11  = "";
 
-//     std::string emd_onnx_m12         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s-12.onnx"; 
-//     std::string emd_scaler_json_m12  = "";
+    std::string emd_onnx_m12         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s-12.onnx"; 
+    std::string emd_scaler_json_m12  = "";
 
-//     std::string emd_onnx_p10         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s10.onnx"; 
-//     std::string emd_scaler_json_p10  = "";
+    std::string emd_onnx_p10         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s10.onnx"; 
+    std::string emd_scaler_json_p10  = "";
 
-//     std::string emd_onnx_p11         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s11.onnx"; 
-//     std::string emd_scaler_json_p11  = "";
+    std::string emd_onnx_p11         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s11.onnx"; 
+    std::string emd_scaler_json_p11  = "";
 
-//     std::string emd_onnx_p12         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s12.onnx"; 
-//     std::string emd_scaler_json_p12  = "";
+    std::string emd_onnx_p12         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_s12.onnx"; 
+    std::string emd_scaler_json_p12  = "";
 
-//     std::string eproj_onnx        = ""/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEproj.onnx"; 
-//     std::string eproj_scaler_json = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEproj.json";
+    std::string eproj_onnx        = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEproj.onnx"; 
+    std::string eproj_scaler_json = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEproj.json";
 
-//     std::string combined_onnx         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLCombined.onnx"; 
-//     std::string combined_scaler_json  = "";
-// };
+    std::string combined_onnx         = "/sphenix/user/jzhang1/testcode4all/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLCombined.onnx"; 
+    std::string combined_scaler_json  = "";
+};
 
 
 // ---- Weights(onnx) and Scalers(json) Path local ---------------------------
-struct DemoPaths
-{
-    std::string emd_onnx_m10         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_eP_s-10.onnx"; 
-    std::string emd_scaler_json_m10  = "";
+// struct DemoPaths
+// {
+//     std::string emd_onnx_m10         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_eP_s-10.onnx"; 
+//     std::string emd_scaler_json_m10  = "";
 
-    std::string emd_onnx_m11         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_eI_s-11.onnx"; 
-    std::string emd_scaler_json_m11  = "";
+//     std::string emd_onnx_m11         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_eI_s-11.onnx"; 
+//     std::string emd_scaler_json_m11  = "";
 
-    std::string emd_onnx_m12         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_eD_s-12.onnx"; 
-    std::string emd_scaler_json_m12  = "";
+//     std::string emd_onnx_m12         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_eD_s-12.onnx"; 
+//     std::string emd_scaler_json_m12  = "";
 
-    std::string emd_onnx_p10         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_pP_s+10.onnx"; 
-    std::string emd_scaler_json_p10  = "";
+//     std::string emd_onnx_p10         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_pP_s+10.onnx"; 
+//     std::string emd_scaler_json_p10  = "";
 
-    std::string emd_onnx_p11         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_pI_s+11.onnx"; 
-    std::string emd_scaler_json_p11  = "";
+//     std::string emd_onnx_p11         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_pI_s+11.onnx"; 
+//     std::string emd_scaler_json_p11  = "";
 
-    std::string emd_onnx_p12         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_pD_s+12.onnx"; 
-    std::string emd_scaler_json_p12  = "";
+//     std::string emd_onnx_p12         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEMD_pD_s+12.onnx"; 
+//     std::string emd_scaler_json_p12  = "";
 
-    std::string eproj_onnx        = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version3/model_weight/model_MLEproj.onnx"; 
-    std::string eproj_scaler_json = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/version3/model_weight/scaler_MLEproj.json";
+//     std::string eproj_onnx        = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLEproj.onnx"; 
+//     std::string eproj_scaler_json = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/scaler_MLEproj.json";
 
-    std::string combined_onnx         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLCombined.onnx"; 
-    std::string combined_scaler_json  = "";
-};
+//     std::string combined_onnx         = "/mnt/e/sphenix/INTT-EMCAL/InttSeedingTrackDev/ML4Reco/Implement/ML_Weight_Scaler/model_MLCombined.onnx"; 
+//     std::string combined_scaler_json  = "";
+// };
 
 // ---- turn string into optional<string> for Config ------------------------
 template<typename Opt>

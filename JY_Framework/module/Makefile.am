@@ -2,6 +2,7 @@ AUTOMAKE_OPTIONS = foreign
 
 AM_CPPFLAGS = \
   -I$(includedir) \
+  -I$(top_srcdir) \
   -I$(OFFLINE_MAIN)/include \
   -I$(OFFLINE_MAIN)/include/phool \
   -I$(OFFLINE_MAIN)/include/fun4all \
@@ -17,17 +18,18 @@ AM_LDFLAGS = \
   -L$(OFFLINE_MAIN)/lib64
 
 pkginclude_HEADERS = \
-  SiCaloMatcher.h \
-  SiCaloMatchedTrack.h \
-  SiCaloMatchedTrackContainer.h
+  $(top_srcdir)/SiCaloMatcher.h \
+  $(top_srcdir)/SiCaloMatchedTrack.h \
+  $(top_srcdir)/SiCaloMatchedTrackContainer.h
 
 lib_LTLIBRARIES = \
   libtrackcalomatch.la
 
 libtrackcalomatch_la_SOURCES = \
-  SiCaloMatcher.cc \
-  SiCaloMatchedTrack.cc \
-  SiCaloMatchedTrackContainer.cc
+  $(top_srcdir)/SiCaloMatcher.cc \
+  $(top_srcdir)/SiCaloMatchedTrack.cc \
+  $(top_srcdir)/SiCaloMatchedTrackContainer.cc \
+  trackcalomatch_Dict.cc
 
 libtrackcalomatch_la_LIBADD = \
   -lphool \
@@ -43,7 +45,21 @@ libtrackcalomatch_la_LIBADD = \
   -lg4eval \
   -lCLHEP
 
-BUILT_SOURCES = testexternals.cc
+trackcalomatch_Dict.cc: $(top_srcdir)/SiCaloMatchedTrack.h $(top_srcdir)/SiCaloMatchedTrackContainer.h $(top_srcdir)/LinkDef.h
+	rootcling -f $@ $(CINTDEFS) $(AM_CPPFLAGS) \
+	  $(top_srcdir)/SiCaloMatchedTrack.h \
+	  $(top_srcdir)/SiCaloMatchedTrackContainer.h \
+	  $(top_srcdir)/LinkDef.h
+
+BUILT_SOURCES = \
+  testexternals.cc \
+  trackcalomatch_Dict.cc
+
+CLEANFILES = \
+  trackcalomatch_Dict.cc \
+  trackcalomatch_Dict.h \
+  trackcalomatch_Dict_rdict.pcm \
+  libtrackcalomatch_rdict.pcm
 
 noinst_PROGRAMS = \
   testexternals
@@ -59,4 +75,4 @@ testexternals.cc:
 	echo "}" >> $@
 
 clean-local:
-	rm -f $(BUILT_SOURCES)
+	rm -f $(BUILT_SOURCES) $(CLEANFILES)

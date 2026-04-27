@@ -17,17 +17,19 @@ AM_LDFLAGS = \
   -L$(OFFLINE_MAIN)/lib64
 
 pkginclude_HEADERS = \
-  TrackCaloMatcher.h \
-  TrackCaloMatchInfo.h
+  SiCaloMatcher.h \
+  SiCaloMatchedTrack.h \
+  SiCaloMatchedTrackContainer.h
 
 lib_LTLIBRARIES = \
-  libTrackCaloMatch.la
+  libtrackcalomatch.la
 
-libTrackCaloMatch_la_SOURCES = \
-  TrackCaloMatcher.cc \
-  TrackCaloMatchInfo.cc
+libtrackcalomatch_la_SOURCES = \
+  SiCaloMatcher.cc \
+  SiCaloMatchedTrack.cc \
+  SiCaloMatchedTrackContainer.cc
 
-libTrackCaloMatch_la_LIBADD = \
+libtrackcalomatch_la_LIBADD = \
   -lphool \
   -lSubsysReco \
   -lfun4all \
@@ -51,7 +53,7 @@ noinst_PROGRAMS = \
   testexternals
 
 testexternals_SOURCES = testexternals.cc
-testexternals_LDADD   = libTrackCaloMatch.la
+testexternals_LDADD   = libtrackcalomatch.la
 
 testexternals.cc:
 	echo "//*** this is a generated file. Do not commit, do not edit" > $@
